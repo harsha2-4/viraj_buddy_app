@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Viraj AI Buddy</string>
+    <string name="greeting">Hi Viraj! 👋</string>
+    <string name="subtitle">Ready for an adventure?</string>
+    <string name="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</string>
+    <string name="talk">🎙️ Talk to Buddy</string>
+    <string name="photo">📷 Show Buddy Something</string>
+    <string name="talk_status">Yay! Let\'s talk! 🎉</string>
+    <string name="photo_status">Cool! Let\'s show Buddy! 📸</string>
+    <string name="idle_status">What should we talk about today?</string>
+    <string name="parent_label">⚙ Parents</string>
+    <string name="parent_accessibility">Open parent settings</string>
+    <string name="avatar_description">Buddy, a friendly green explorer waving hello</string>
+    <string name="footer">♡ Little moments. Big discoveries.</string>
+    <string name="close">Close</string>
+    <string name="configured">Configured</string>
+    <string name="not_configured">Not Configured</string>
+    <string name="settings_message">Version %1$s\n\nConfigured ChatGPT destination: %2$s\n\nOpen ChatGPT with a grown-up. Voice and photos start inside ChatGPT when available.</string>
+    <string name="setup_help">\n\nSet chatgptUrl in web/js/config.js, then rebuild and reinstall this APK.</string>
+    <string name="needs_setup">A grown-up can help set up Buddy.</string>
+    <string name="no_browser">Ask a grown-up to install or enable a browser, then try again.</string>
+    <string name="browser_blocked">Ask a grown-up to check browser permissions, then try again.</string>
+</resources>

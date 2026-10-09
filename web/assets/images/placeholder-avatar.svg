@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-labelledby="title">
+  <title id="title">Buddy, a friendly mint-green explorer</title>
+  <defs>
+    <linearGradient id="body" x2=".8" y2="1"><stop stop-color="#b9d5b7"/><stop offset="1" stop-color="#83b79e"/></linearGradient>
+    <linearGradient id="face" x2="0" y2="1"><stop stop-color="#fffdf1"/><stop offset="1" stop-color="#f4ecd7"/></linearGradient>
+  </defs>
+  <path d="M125 257q-16 35-31 27c-9-6-1-26 11-40m79 13q16 35 31 27c9-6 1-26-11-40" fill="#63997f"/>
+  <path d="M101 182Q62 186 61 225q3 14 14 5l30-22" fill="#8abd9f"/>
+  <path d="M215 182q35 0 40-38l-1-20q3-11 10-4l2 14 6-14q7-6 10 2l-5 19 8-6q10 0 5 9l-16 22q-6 42-47 46" fill="#8abd9f"/>
+  <path d="M108 170q-23 32-16 78 2 26 66 29 65-2 70-27 9-52-18-80" fill="url(#body)"/>
+  <ellipse cx="159" cy="236" rx="35" ry="26" fill="#bfd7b7" opacity=".75"/>
+  <path d="M95 79 77 59q-8-18 8-23 18-4 33 26m86 17 18-20q8-18-8-23-18-4-33 26" fill="#82b39a"/>
+  <rect x="65" y="60" width="189" height="144" rx="65" fill="url(#body)"/>
+  <rect x="80" y="84" width="159" height="107" rx="49" fill="url(#face)"/>
+  <ellipse cx="119" cy="130" rx="8" ry="12" fill="#294b41"/><ellipse cx="198" cy="130" rx="8" ry="12" fill="#294b41"/>
+  <circle cx="122" cy="126" r="2.5" fill="#fff"/><circle cx="201" cy="126" r="2.5" fill="#fff"/>
+  <ellipse cx="102" cy="150" rx="12" ry="7" fill="#e5b3a0" opacity=".65"/><ellipse cx="216" cy="150" rx="12" ry="7" fill="#e5b3a0" opacity=".65"/>
+  <path d="M144 151q15 16 30 0" fill="none" stroke="#294b41" stroke-width="5" stroke-linecap="round"/>
+  <path d="m145 210 14-9 14 9-14 24z" fill="#fff5d5"/>
+  <path d="m158 209 3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#cc9c47"/>
+  <path d="M129 67q29-14 56 0" fill="none" stroke="#cee2c4" stroke-width="7" stroke-linecap="round"/>
+</svg>

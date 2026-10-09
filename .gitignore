@@ -1,0 +1,53 @@
+# Android Studio / Gradle / native builds
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties
+**/build/
+.cxx/
+.externalNativeBuild/
+captures/
+*.apk
+*.aab
+*.dex
+*.class
+*.hprof
+
+# Signing, credentials, and local configuration
+*.jks
+*.keystore
+keystore.properties
+key.properties
+*.p12
+*.pem
+.env
+.env.*
+!.env.example
+secrets/
+credentials*.json
+*cookies*.json
+*cookies*.txt
+*token*.json
+
+# Editors, OS, temporary files and optional developer tooling
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*.log
+*~
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+test-results/
+playwright-report/
+.local/
+dist/
+
+# Keep the official Gradle wrapper JAR in version control.
+!android/gradle/wrapper/gradle-wrapper.jar

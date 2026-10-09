@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8f5ee">
+  <meta name="description" content="A little launchpad for big adventures. Viraj AI Buddy, with a grown-up by your side.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Viraj Buddy">
+  <meta name="referrer" content="no-referrer">
+  <title>Viraj AI Buddy</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" href="./assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./css/styles.css">
+  <script type="module" src="./js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Viraj AI Buddy home"><span class="brand-mark" aria-hidden="true">✦</span><span>viraj<span class="brand-light"> / ai buddy</span></span></a>
+    <button id="parent-button" class="parent-button" type="button" aria-label="Open parent settings" aria-haspopup="dialog"><span aria-hidden="true">⚙</span><span>Parents</span></button>
+  </header>
+  <main class="launchpad">
+    <section class="avatar-area" aria-label="Your friendly Buddy">
+      <span class="orbit orbit-one" aria-hidden="true">✦</span>
+      <span class="orbit orbit-two" aria-hidden="true">✧</span>
+      <span class="little-dot" aria-hidden="true"></span>
+      <div class="avatar-halo" aria-hidden="true"></div>
+      <div id="avatar" class="avatar" data-state="idle">
+        <img src="./assets/images/placeholder-avatar.svg" width="320" height="320" alt="Buddy, a smiling mint-green little explorer waving hello">
+      </div>
+      <span class="avatar-shadow" aria-hidden="true"></span>
+      <div class="buddy-label"><span aria-hidden="true"></span>Your adventure buddy</div>
+    </section>
+    <section class="welcome" aria-labelledby="greeting">
+      <p class="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</p>
+      <h1 id="greeting">Hi Viraj! <span class="hello-wave" aria-hidden="true">👋</span></h1>
+      <p class="subtitle">Ready for an adventure?</p>
+      <div class="actions">
+        <button id="talk-button" class="action action-primary" type="button" aria-label="Talk to Buddy — open ChatGPT"><span class="action-icon" aria-hidden="true">🎙️</span><span>Talk to Buddy</span><span class="arrow" aria-hidden="true">↗</span></button>
+        <button id="photo-button" class="action action-secondary" type="button" aria-label="Show Buddy Something — open ChatGPT"><span class="action-icon" aria-hidden="true">📷</span><span>Show Buddy Something</span></button>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true">What should we talk about today?</p>
+      <noscript><p>Please ask a grown-up to enable JavaScript to open Buddy.</p></noscript>
+    </section>
+  </main>
+  <footer><span aria-hidden="true">♡</span> Little moments. Big discoveries.</footer>
+  <dialog id="parent-dialog" aria-labelledby="settings-title" aria-describedby="settings-description">
+    <div class="dialog-content">
+      <p class="eyebrow">FOR GROWN-UPS</p>
+      <h2 id="settings-title">Viraj AI Buddy</h2>
+      <p>Version 0.1</p>
+      <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
+      <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
+      <p>Open ChatGPT with a grown-up. Voice and photos start inside ChatGPT when available; Buddy does not turn them on.</p>
+      <form method="dialog"><button class="close-button" autofocus>Close</button></form>
+    </div>
+  </dialog>
+</body>
+</html>

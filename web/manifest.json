@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Viraj AI Buddy",
+  "short_name": "Viraj Buddy",
+  "description": "A little launchpad for big adventures, together with a grown-up.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f5ee",
+  "theme_color": "#f8f5ee",
+  "icons": [
+    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
