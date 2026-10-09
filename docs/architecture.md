@@ -1,5 +1,12 @@
 # Phase 1 architecture
 
+**Historical launcher architecture.** Version 0.2 adds `server/index.mjs`,
+WebRTC voice in `web/js/voice.js`, topic illustrations in `web/js/scenes.js`,
+and an Android `VoiceActivity` WebView restricted to the configured HTTPS origin.
+It requests microphone permission only for voice. See [current voice architecture
+and setup](voice-setup.md). The diagram and constraints below describe only the
+original external ChatGPT launcher, retained for the photo action.
+
 ```text
 iPhone 1 / iPhone 2                     Fire HD 10
 Safari → installed PWA                  installed native Kotlin APK

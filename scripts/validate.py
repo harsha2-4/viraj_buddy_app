@@ -61,10 +61,10 @@ check(len(re.findall(r'^\s*chatgptUrl:\s*"[^"\r\n]*"\s*,?\s*$', config, re.M)) =
 
 ns = '{http://schemas.android.com/apk/res/android}'
 manifest_root = ET.parse(ANDROID / 'AndroidManifest.xml').getroot()
-check(not manifest_root.findall('uses-permission'), 'Native launcher should need no permissions')
+check({p.attrib[ns + 'name'] for p in manifest_root.findall('uses-permission')} == {'android.permission.INTERNET', 'android.permission.RECORD_AUDIO'}, 'Voice requires only network and microphone permissions')
 app = manifest_root.find('application')
 check(app.attrib[ns + 'label'] == '@string/app_name', 'Incorrect native label')
-activity = app.find('activity')
+activity = next(a for a in app.findall('activity') if a.attrib[ns + 'name'] == '.MainActivity')
 check(activity.attrib[ns + 'name'] == '.MainActivity', 'Incorrect activity class')
 check(activity.attrib[ns + 'exported'] == 'true', 'Launcher must be exported')
 

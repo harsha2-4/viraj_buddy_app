@@ -1,4 +1,8 @@
-# Web launcher
+# Animated voice app
+
+For live voice, run the Node server from the repository root using `npm start`.
+Follow [voice setup](../docs/voice-setup.md) to configure credentials and HTTPS.
+The static preview instructions below do not provide `/api/session`.
 
 Plain HTML, CSS, ES modules and SVG. No package installation or build step.
 
@@ -21,12 +25,14 @@ Other web settings: `childName`, `appName`, `enableCameraButton`,
 `enableAnimations`, `debugMode`. Names in the manifest/Apple metadata and native
 strings are branding, so update those separately if renaming the whole app.
 
-Both child-facing buttons open that destination; photo capture and Voice activation
-are handled manually inside ChatGPT. Browser/app support determines availability.
-This is an adult-led launcher, not an independent ChatGPT account for a child.
+Talk to Buddy starts the in-app voice flow with an adult and a family access code.
+Show Buddy Something opens the configured external ChatGPT destination for photos.
+These conversations are independent.
 
-`AvatarController` implements idle and happy. The CSS respects reduced motion;
-`enableAnimations: false` stops animation. There is no listening or speech simulation.
+`AvatarController` implements idle, happy, listening, thinking and talking poses.
+`VoiceSession` handles WebRTC audio and playback events; `SceneController` maps
+reply text to bundled illustrations. Reduced motion and `enableAnimations: false`
+disable animation. No lip sync is used.
 
 The service worker caches a fixed allowlist of local assets. HTML/config use the
 network when available; the installed shell remains usable offline, but ChatGPT

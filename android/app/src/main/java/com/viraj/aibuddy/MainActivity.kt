@@ -82,8 +82,8 @@ class MainActivity : Activity() {
         frame.addView(content, LinearLayout.LayoutParams(dp(if (landscape) 900 else 460).coerceAtMost(resources.displayMetrics.widthPixels - dp(48)), -2))
 
         avatar = ImageView(this).apply {
-            setImageResource(R.drawable.buddy)
-            contentDescription = getString(R.string.avatar_description)
+            setImageResource(R.drawable.boy)
+            contentDescription = "Buddy, a smiling boy in a green explorer shirt"
             scaleType = ImageView.ScaleType.FIT_CENTER
             background = rounded(Color.rgb(231, 236, 223), 160f)
         }
@@ -99,7 +99,13 @@ class MainActivity : Activity() {
         controls.addView(label(getString(R.string.eyebrow), 10f, true))
         controls.addView(label(getString(R.string.greeting), 38f, true), spaced(10))
         controls.addView(label(getString(R.string.subtitle), 18f), spaced(8))
-        talk = action(getString(R.string.talk), true) { openBuddy(false) }
+        talk = action(getString(R.string.talk), true) {
+            if (VoiceActivity.configuredUrl() == null) {
+                AlertDialog.Builder(this).setTitle("Set up Buddy voice")
+                    .setMessage("A grown-up needs to host the voice server and set voiceAppUrl in web/js/config.js, then rebuild the app. Photos still open ChatGPT.")
+                    .setPositiveButton("OK", null).show()
+            } else startActivity(Intent(this, VoiceActivity::class.java))
+        }
         photo = action(getString(R.string.photo), false) { openBuddy(true) }
         controls.addView(talk, spaced(28))
         controls.addView(photo, spaced(14))

@@ -1,0 +1,10 @@
+{
+  "name": "viraj-buddy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "test": "node --test scripts/*.test.mjs"
+  },
+  "engines": { "node": ">=22.9" }
+}

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- No microphone, camera, network, storage, or Google Play permissions needed. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -9,6 +11,7 @@
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.VirajBuddy">
+        <activity android:name=".VoiceActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -13,8 +13,7 @@ export class AvatarController {
   }
 
   setState(state) {
-    // Listening/thinking/talking are reserved; no simulated AI or microphone state.
-    this.element.dataset.state = state === 'happy' ? 'happy' : 'idle';
+    this.element.dataset.state = ['idle', 'happy', 'connecting', 'listening', 'thinking', 'talking'].includes(state) ? state : 'idle';
   }
 
   celebrate() {

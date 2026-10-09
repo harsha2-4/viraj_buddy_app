@@ -28,32 +28,88 @@
       <span class="little-dot" aria-hidden="true"></span>
       <div class="avatar-halo" aria-hidden="true"></div>
       <div id="avatar" class="avatar" data-state="idle">
-        <img src="./assets/images/placeholder-avatar.svg" width="320" height="320" alt="Buddy, a smiling mint-green little explorer waving hello">
+        <svg viewBox="0 0 320 360" role="img" aria-label="Buddy, a smiling boy with brown hair and a green explorer shirt">
+          <g class="boy-body">
+            <path d="M121 278 L117 334 Q131 345 148 334 L155 284 M170 284 L177 334 Q193 345 205 333 L199 275" fill="#36566c"/>
+            <path d="M114 328 Q129 324 149 333 L149 344 L109 344 Q103 337 114 328 M177 332 Q196 322 207 332 L214 344 L176 344Z" fill="#f5bd5c"/>
+            <g class="boy-arm boy-arm-left"><path d="M119 204 Q92 214 85 253" fill="none" stroke="#338471" stroke-width="30" stroke-linecap="round"/><path d="M85 250 L79 274" fill="none" stroke="#dba070" stroke-width="21" stroke-linecap="round"/><circle cx="78" cy="278" r="13" fill="#e8ad7b"/></g>
+            <g class="boy-arm boy-arm-right"><path d="M199 207 Q228 210 239 183" fill="none" stroke="#338471" stroke-width="30" stroke-linecap="round"/><path d="M239 181 L249 155" fill="none" stroke="#e8ad7b" stroke-width="21" stroke-linecap="round"/><path d="M241 156 L238 144 M249 151 L250 133 M256 153 L263 139" fill="none" stroke="#e8ad7b" stroke-width="9" stroke-linecap="round"/><circle cx="250" cy="155" r="14" fill="#e8ad7b"/></g>
+            <path d="M122 199 Q160 180 198 199 L210 284 Q163 299 111 284Z" fill="#3c9680"/>
+            <path d="M140 194 Q159 217 180 194" fill="#f6d087"/><path d="M158 216 L158 284" stroke="#2b7968" stroke-width="3"/>
+            <rect x="171" y="228" width="27" height="26" rx="7" fill="#a7d3b0"/><path d="M184 232 L187 239 L194 240 L188 245 L189 251 L184 248 L178 251 L179 244 L174 240 L181 239Z" fill="#fff2bc"/>
+            <g class="boy-head">
+              <rect x="144" y="171" width="32" height="31" rx="12" fill="#dca071"/>
+              <circle cx="101" cy="127" r="17" fill="#e8ad7b"/><circle cx="218" cy="127" r="17" fill="#e8ad7b"/>
+              <path d="M101 89 Q105 39 160 38 Q219 42 219 97 L216 142 Q206 186 160 191 Q112 184 103 145Z" fill="#f0bb8b"/>
+              <path d="M99 120 Q78 69 117 45 Q113 28 142 34 Q177 9 204 42 Q239 56 218 121 L209 87 Q170 90 149 66 Q137 91 106 94Z" fill="#46352d"/>
+              <path d="M123 52 Q146 36 175 43" fill="none" stroke="#685044" stroke-width="9" stroke-linecap="round"/>
+              <path d="M120 112 Q130 106 140 111 M180 111 Q190 106 201 113" fill="none" stroke="#644535" stroke-width="4" stroke-linecap="round"/>
+              <g class="boy-eyes"><ellipse cx="131" cy="129" rx="6" ry="9" fill="#303831"/><ellipse cx="190" cy="129" rx="6" ry="9" fill="#303831"/><circle cx="133" cy="126" r="2" fill="white"/><circle cx="192" cy="126" r="2" fill="white"/></g>
+              <ellipse cx="119" cy="147" rx="12" ry="7" fill="#e99b7c"/><ellipse cx="201" cy="147" rx="12" ry="7" fill="#e99b7c"/>
+              <path d="M156 134 L152 147 Q160 151 167 147" fill="none" stroke="#cf9465" stroke-width="3" stroke-linecap="round"/>
+              <path d="M139 158 Q160 175 181 158 Q160 184 139 158" fill="#fff8e9" stroke="#965743" stroke-width="3" stroke-linejoin="round"/>
+            </g>
+          </g>
+        </svg>
       </div>
       <span class="avatar-shadow" aria-hidden="true"></span>
-      <div class="buddy-label"><span aria-hidden="true"></span>Your adventure buddy</div>
+      <div class="buddy-label"><span aria-hidden="true"></span><span id="buddy-state">Your AI adventure buddy</span><span class="voice-bars" aria-hidden="true">▂ ▅ ▃ ▆</span></div>
     </section>
     <section class="welcome" aria-labelledby="greeting">
       <p class="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</p>
       <h1 id="greeting">Hi Viraj! <span class="hello-wave" aria-hidden="true">👋</span></h1>
       <p class="subtitle">Ready for an adventure?</p>
       <div class="actions">
-        <button id="talk-button" class="action action-primary" type="button" aria-label="Talk to Buddy — open ChatGPT"><span class="action-icon" aria-hidden="true">🎙️</span><span>Talk to Buddy</span><span class="arrow" aria-hidden="true">↗</span></button>
+        <button id="talk-button" class="action action-primary" type="button" aria-label="Talk to Buddy"><span class="action-icon" aria-hidden="true">🎙️</span><span>Talk to Buddy</span><span class="arrow" aria-hidden="true">→</span></button>
+        <div id="voice-controls" class="voice-controls" hidden><button id="mute-button" type="button" aria-pressed="false">Mute microphone</button><button id="end-button" type="button">End conversation</button></div>
+        <button id="enable-audio" type="button" class="small-button" hidden>Tap to hear Buddy</button>
         <button id="photo-button" class="action action-secondary" type="button" aria-label="Show Buddy Something — open ChatGPT"><span class="action-icon" aria-hidden="true">📷</span><span>Show Buddy Something</span></button>
       </div>
       <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true">What should we talk about today?</p>
+      <p id="transcript" class="transcript" hidden></p>
+      <p class="voice-note">An AI voice, a little imagination, and a grown-up by your side.</p>
       <noscript><p>Please ask a grown-up to enable JavaScript to open Buddy.</p></noscript>
     </section>
   </main>
+  <section id="scene" class="scene" aria-labelledby="scene-title">
+    <div class="scene-copy"><p class="eyebrow">OUR IMAGINATION WINDOW</p><h2 id="scene-title">A world of little wonders</h2><p id="scene-caption">Where shall we go together?</p></div>
+    <svg class="scene-picture" viewBox="0 0 420 150" role="img" aria-label="Illustrated conversation scene">
+      <defs>
+        <symbol id="art-sun" viewBox="0 0 100 100"><circle cx="50" cy="50" r="24" fill="#efb64d"/><path d="M50 10V1 M50 99V90 M10 50H1 M99 50H90 M20 20L13 13 M80 80L87 87 M20 80L13 87 M80 20L87 13" stroke="#efb64d" stroke-width="6" stroke-linecap="round"/></symbol>
+        <symbol id="art-tree" viewBox="0 0 100 100"><path d="M50 48V94" stroke="#98744d" stroke-width="12"/><path d="M50 7 Q5 20 17 55 Q22 77 50 66 Q81 77 87 49 Q88 16 50 7" fill="#478d6b"/><path d="M50 27V60 M33 42L50 53 L68 36" stroke="#80b589" stroke-width="4" fill="none"/></symbol>
+        <symbol id="art-flower" viewBox="0 0 100 100"><path d="M50 46V95 M50 80Q17 84 24 64Q42 63 50 80 M50 70Q78 75 78 55Q61 54 50 70" fill="#51976a" stroke="#51976a" stroke-width="5"/><g fill="#e99b8e"><circle cx="50" cy="20" r="17"/><circle cx="30" cy="37" r="17"/><circle cx="70" cy="37" r="17"/><circle cx="38" cy="56" r="17"/><circle cx="62" cy="56" r="17"/></g><circle cx="50" cy="38" r="16" fill="#f5ce69"/></symbol>
+        <symbol id="art-star" viewBox="0 0 100 100"><path d="M50 5L63 34L96 38L72 61L78 95L50 78L22 95L28 61L4 38L37 34Z" fill="#f5d475"/></symbol>
+        <symbol id="art-rocket" viewBox="0 0 100 100"><path d="M38 70L50 100L62 70" fill="#efbc57"/><path d="M30 51L13 81L35 73 M70 51L87 81L65 73" fill="#db8e79"/><path d="M50 4Q22 29 32 72H68Q78 29 50 4" fill="#fff6df"/><circle cx="50" cy="39" r="13" fill="#80c4d1"/><path d="M36 67H64" stroke="#db8e79" stroke-width="8"/></symbol>
+        <symbol id="art-planet" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="#d6abcb"/><ellipse cx="50" cy="50" rx="48" ry="12" fill="none" stroke="#efd39b" stroke-width="8" transform="rotate(-25 50 50)"/></symbol>
+        <symbol id="art-fish" viewBox="0 0 100 100"><path d="M68 50L94 25V75Z" fill="#e89a64"/><ellipse cx="42" cy="50" rx="35" ry="25" fill="#f4c371"/><circle cx="24" cy="44" r="5" fill="#264e55"/><path d="M45 42L59 52L45 61" fill="#e89a64"/></symbol>
+        <symbol id="art-shell" viewBox="0 0 100 100"><path d="M50 85Q-8 36 18 25Q27 1 44 15Q63 0 75 21Q105 25 89 52Z" fill="#f0b7ac"/><path d="M50 80L27 30 M50 80L50 23 M50 80L76 31" stroke="#d48e8d" stroke-width="4"/></symbol>
+        <symbol id="art-cat" viewBox="0 0 100 100"><path d="M17 43L15 8L41 26H61L86 8L84 45Q98 93 50 95Q3 94 17 43" fill="#dfa76c"/><path d="M26 17L28 36L39 28 M78 18L64 28L76 35" fill="#f1c8a0"/><circle cx="32" cy="52" r="5"/><circle cx="68" cy="52" r="5"/><path d="M44 66L50 73L56 66Z" fill="#875e50"/><path d="M18 66H2 M20 75L4 80 M82 66H98 M80 75L96 80" stroke="#875e50" stroke-width="3"/></symbol>
+        <symbol id="art-dinosaur" viewBox="0 0 100 100"><path d="M17 59Q51 73 48 38Q39 5 64 7Q91 7 84 28L63 31V58Q97 74 70 84V98H57V82H38V98H25V78Q8 79 3 45Z" fill="#5d9a78"/><circle cx="68" cy="17" r="3" fill="#243c38"/><path d="M43 44L34 39L42 33 M43 58L33 54L39 48" fill="#edbf69"/></symbol>
+        <symbol id="art-note" viewBox="0 0 100 100"><path d="M36 75V24L83 12V62 M36 38L83 26" fill="none" stroke="#86699d" stroke-width="10"/><ellipse cx="23" cy="77" rx="20" ry="14" fill="#86699d"/><ellipse cx="70" cy="65" rx="20" ry="14" fill="#86699d"/></symbol>
+        <symbol id="art-one" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="90" fill="#ce785c">1</text></symbol>
+        <symbol id="art-two" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="90" fill="#528573">2</text></symbol>
+        <symbol id="art-three" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="90" fill="#9274a4">3</text></symbol>
+      </defs>
+      <ellipse cx="215" cy="157" rx="240" ry="42" fill="var(--scene-ground)"/>
+      <svg class="scene-object" x="25" y="22" width="85" height="100"><use href="#art-sun"/></svg>
+      <svg class="scene-object" x="152" y="15" width="106" height="115"><use href="#art-tree"/></svg>
+      <svg class="scene-object" x="300" y="30" width="83" height="100"><use href="#art-flower"/></svg>
+    </svg>
+  </section>
   <footer><span aria-hidden="true">♡</span> Little moments. Big discoveries.</footer>
   <dialog id="parent-dialog" aria-labelledby="settings-title" aria-describedby="settings-description">
     <div class="dialog-content">
       <p class="eyebrow">FOR GROWN-UPS</p>
       <h2 id="settings-title">Viraj AI Buddy</h2>
-      <p>Version 0.1</p>
+      <p>Version 0.2 · Animated voice adventures</p>
+      <p>Live voice sends microphone audio to OpenAI. Replies use an AI-generated voice. Stay with your child during the activity. Ending the conversation turns off the microphone.</p>
+      <label for="access-code">Family access code</label>
+      <input id="access-code" type="password" autocomplete="off" maxlength="200" placeholder="Set by your grown-up">
+      <p id="voice-setup-help">Enter the family code configured on your Buddy voice server. This is not your OpenAI API key. The code stays in memory for this visit only.</p>
+      <button id="start-voice" type="button" class="close-button">Start voice with my grown-up</button>
       <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
       <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
-      <p>Open ChatGPT with a grown-up. Voice and photos start inside ChatGPT when available; Buddy does not turn them on.</p>
+      <p>Show Buddy Something opens the separate ChatGPT destination for photos. That conversation does not control this character.</p>
       <form method="dialog"><button class="close-button" autofocus>Close</button></form>
     </div>
   </dialog>

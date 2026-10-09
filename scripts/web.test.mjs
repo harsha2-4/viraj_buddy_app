@@ -28,7 +28,7 @@ async function workerHarness() {
   const requests = [];
   const scope = 'https://example.test/viraj-ai-buddy/';
   const prefix = `viraj-buddy:${scope}:`;
-  const keys = [prefix + 'v0', prefix + 'v1', 'viraj-buddy:https://example.test/another/:v0', 'other-app'];
+  const keys = [prefix + 'v0', prefix + 'v2', 'viraj-buddy:https://example.test/another/:v0', 'other-app'];
   let offline = false;
   let claimed = false;
   const cache = {
@@ -65,7 +65,7 @@ async function workerHarness() {
 test('worker precaches only own repository path and cleans only its own old cache', async () => {
   const worker = await workerHarness();
   await worker.lifecycle('install');
-  assert.equal(worker.stored.size, 12);
+  assert.equal(worker.stored.size, 14);
   for (const url of worker.stored.keys()) assert.ok(url.startsWith(worker.scope));
   await worker.lifecycle('activate');
   assert.deepEqual(worker.deleted, [worker.prefix + 'v0']);

@@ -16,7 +16,7 @@
     <string name="close">Close</string>
     <string name="configured">Configured</string>
     <string name="not_configured">Not Configured</string>
-    <string name="settings_message">Version %1$s\n\nConfigured ChatGPT destination: %2$s\n\nOpen ChatGPT with a grown-up. Voice and photos start inside ChatGPT when available.</string>
+    <string name="settings_message">Version %1$s\n\nConfigured photo / ChatGPT destination: %2$s\n\nTalk to Buddy uses the hosted AI voice experience with microphone permission. Stay with your child. Photos open ChatGPT separately. Voice setup: docs/voice-setup.md.</string>
     <string name="setup_help">\n\nSet chatgptUrl in web/js/config.js, then rebuild and reinstall this APK.</string>
     <string name="needs_setup">A grown-up can help set up Buddy.</string>
     <string name="no_browser">Ask a grown-up to install or enable a browser, then try again.</string>

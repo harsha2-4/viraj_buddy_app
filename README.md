@@ -1,5 +1,11 @@
 # Viraj AI Buddy
 
+**Version 0.2 adds an animated boy and in-app AI voice conversations**, with
+gestures during speech and illustrated scenes that follow conversation topics.
+See [voice setup](docs/voice-setup.md) for the Node backend, API credentials,
+HTTPS hosting, and Android configuration. The original Phase 1 instructions below
+describe the retained external ChatGPT/photo launcher, not the new voice mode.
+
 The Phase 1 shell application for Viraj AI Buddy: a calm, friendly launchpad for
 adult-led adventures, using an existing ChatGPT destination. No OpenAI API,
 Realtime API, paid backend, or custom AI integration is used.
