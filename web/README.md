@@ -34,11 +34,21 @@ These conversations are independent.
 reply text to bundled illustrations. Reduced motion and `enableAnimations: false`
 disable animation. No lip sync is used.
 
+Buddy's voice behavior is defined in `server/master-prompt.md`. Edit that
+Markdown file to update Buddy's instructions; changes apply to new voice
+sessions. Conversation
+transcripts are saved in this browser's local storage, can be reviewed or cleared
+from **Parents → Conversation history**, and are not uploaded to this app's server.
+The next voice session sends a short excerpt of recent history to OpenAI as
+context. The browser keeps up to 50 conversations; older ones are removed as
+new sessions are saved. The separate ChatGPT/photo conversations are not included.
+
 The service worker caches a fixed allowlist of local assets. HTML/config use the
 network when available; the installed shell remains usable offline, but ChatGPT
 needs internet. Increment `VERSION` in `service-worker.js` after shell changes;
 close all launcher tabs/windows and reopen twice online to activate a waiting
 release. For development, unregister the worker through browser developer tools
-if stale static files hide edits. Nothing from ChatGPT is cached by this launcher.
+if stale static files hide edits. Saved transcripts are browser data, not service
+worker cache data; the browser or OS may clear them.
 
 See [iPhone setup](../docs/iphone-installation.md) and [root README](../README.md).

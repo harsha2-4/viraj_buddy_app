@@ -27,9 +27,32 @@ connection attempts to eight per minute per source address; this is not a billin
 cap. Set the lowest available API usage budget and billing alerts, and verify
 whether your budget blocks requests or only sends notifications. Audio goes
 directly to OpenAI; the server exchanges connection offers and does not record
-audio or transcripts.
-This is a new API conversation, not the existing ChatGPT project's history.
+audio or transcripts. Voice transcripts are saved in the browser's local storage
+on that device, not on the server. Parents can review and clear them in
+**Parents → Conversation history**. The browser retains up to 50 conversations.
+At the start of a later voice session, a bounded excerpt of recent history is sent
+to OpenAI for conversational context. The app does not access the separate
+ChatGPT project's history, and the photo/ChatGPT flow remains independent.
 API usage requires a funded API account and is separate from a ChatGPT subscription.
+
+## Buddy's master prompt and history
+
+Edit `server/master-prompt.md` to change Buddy's consistent voice behavior and
+safety guidance. The server reads this Markdown file when each new voice session
+starts, so edits apply to new sessions without a code change. It is sent as the
+Realtime session instruction; it is separate from the short welcome instruction
+used to begin each session. The prompt is guidance, not a substitute for adult
+supervision or product safety controls.
+
+Voice activity detection uses a higher speech threshold and a longer silence
+window so incidental sounds are less likely to start a turn. Barge-in is disabled,
+and Buddy's session instructions prioritize the child's words when voices overlap.
+
+User transcripts are captured using Realtime input transcription and stored
+locally alongside Buddy's completed reply transcripts. Audio is not saved by the
+app. Browser storage can be removed by clearing site data, uninstalling the PWA,
+or browser/OS storage cleanup. Use **Clear conversation history** in Parents
+settings to delete the saved records yourself.
 
 ## Host for phones and Fire tablets
 

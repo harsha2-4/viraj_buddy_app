@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const web = path.resolve(fileURLToPath(new URL('../web/', import.meta.url)));
+const masterPromptPath = fileURLToPath(new URL('./master-prompt.md', import.meta.url));
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json' };
 export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
   const attempts = new Map();
@@ -29,6 +30,14 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
         attempts.set(ip, entry);
         if (++entry.count > 8) return send(429, { error: 'Please wait a minute before trying again.' });
         if (!(req.headers['content-type'] || '').startsWith('application/sdp')) return send(415, { error: 'Expected a voice connection offer.' });
+        let instructions;
+        try {
+          instructions = (await readFile(masterPromptPath, 'utf8')).trim();
+        } catch (error) {
+          if (error.code === 'ENOENT') return send(503, { error: 'Buddy master prompt is missing. Restore server/master-prompt.md.' });
+          throw error;
+        }
+        if (!instructions) return send(503, { error: 'Buddy master prompt is empty. Add Buddy instructions to server/master-prompt.md.' });
         let sdp = '';
         for await (const chunk of req) {
           sdp += chunk;
@@ -39,9 +48,9 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
         form.set('sdp', sdp);
         form.set('session', JSON.stringify({
           type: 'realtime', model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
-          instructions: 'You are Buddy, a friendly animated AI boy character for an adult-led educational activity with a young child. Be clear that you are an AI character, not a real boy. Speak warmly in short, simple sentences. Ask one question at a time and wait. Explore animals, space, oceans, gardens, dinosaurs, music and counting through playful imagination. Encourage a grown-up to participate. Never ask for personal information or secrets. For unsafe requests, gently redirect to a safe activity with a grown-up. Do not claim to see the child or the screen. The app shows illustrations based on words in your replies. Use concrete topic words naturally. Keep replies under about 40 words unless asked for a story.',
+          instructions,
           max_output_tokens: 400,
-          audio: { input: { turn_detection: { type: 'server_vad', interrupt_response: true, create_response: true } }, output: { voice: 'marin' } }
+          audio: { input: { transcription: { model: 'gpt-4o-mini-transcribe' }, turn_detection: { type: 'server_vad', threshold: 0.7, prefix_padding_ms: 300, silence_duration_ms: 900, interrupt_response: false, create_response: true } }, output: { voice: 'marin' } }
         }));
         const upstream = await fetcher('https://api.openai.com/v1/realtime/calls', {
           method: 'POST', headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },

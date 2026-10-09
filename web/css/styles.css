@@ -399,6 +399,8 @@ dialog::backdrop {
 
 .dialog-content {
   padding: 28px;
+  max-height: calc(100svh - 40px);
+  overflow-y: auto;
 }
 
 .dialog-content p {
@@ -413,6 +415,54 @@ dialog::backdrop {
 .dialog-content h2 {
   margin: 0;
   font-size: 26px;
+}
+
+.history-panel {
+  margin-top: 20px;
+  border-top: 1px solid #d8ded0;
+  padding-top: 12px;
+}
+
+.history-warning {
+  color: #873e35;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.history-panel h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.history-panel #history-status {
+  font-size: 12px;
+}
+
+.history-panel details {
+  padding: 8px 0;
+  border-top: 1px solid #e5e8df;
+  font-size: 12px;
+}
+
+.history-panel summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.history-message {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.history-clear {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #9b574d;
+  border-radius: 12px;
+  background: transparent;
+  color: #873e35;
+  font-weight: 700;
 }
 
 code {

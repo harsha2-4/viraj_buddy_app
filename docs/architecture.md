@@ -48,9 +48,12 @@ listening/thinking/talking are reserved names with an idle fallback. The photo
 action is a separate mode in one navigation function, ready for future redesign.
 
 Relative paths, scoped cache names, and manifest start/scope `./` support a GitHub
-Pages repository subpath. The service worker never caches external requests. It
-does not persist conversations, photos or audio. Browser caching is best-effort:
-the OS can evict stored data. The initial online visit must finish caching first.
+Pages repository subpath. The service worker never caches external requests or
+conversation history. Voice transcripts are saved separately in browser local
+storage on the device, with a bounded excerpt used as context in a later voice
+session. The server does not persist conversation records, photos or audio.
+Browser storage/caching is best-effort: the OS can evict stored data. The initial
+online visit must finish caching first.
 
 ## Native boundaries
 

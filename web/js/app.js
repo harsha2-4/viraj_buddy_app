@@ -3,8 +3,13 @@ import { AvatarController } from './animations.js';
 import { getChatGptDestination } from './navigation.js';
 import { VoiceSession } from './voice.js';
 import { SceneController } from './scenes.js';
+import { addConversationMessage, buildHistoryContext, clearConversations, endConversation, listConversations, startConversation } from './history.js';
 
 const byId = (id) => document.getElementById(id);
+const showHistoryWarning = (message = '') => {
+  byId('history-warning').textContent = message;
+  byId('history-warning').hidden = !message;
+};
 const avatar = new AvatarController(byId('avatar'), { enabled: CONFIG.enableAnimations });
 const talkButton = byId('talk-button');
 const photoButton = byId('photo-button');
@@ -14,6 +19,7 @@ let navigationTimer;
 let opening = false;
 let active = false;
 let muted = false;
+let activeConversationId;
 const scene = new SceneController(byId('scene'));
 const states = { idle: 'Your AI adventure buddy', connecting: 'Connecting…', listening: 'I’m listening', thinking: 'Let me think…', talking: 'Buddy is talking' };
 const voice = new VoiceSession({
@@ -27,6 +33,27 @@ const voice = new VoiceSession({
     byId('transcript').hidden = !text;
     byId('transcript').textContent = text;
     scene.follow(text);
+  },
+  onMessage(role, text) {
+    if (!activeConversationId) return;
+    try {
+      addConversationMessage(activeConversationId, role, text);
+      byId('history-status').textContent = 'Conversation history is saved on this device.';
+      showHistoryWarning();
+    } catch (error) {
+      byId('history-status').textContent = `History could not be saved: ${error.message}`;
+      showHistoryWarning(`Conversation history could not be saved: ${error.message}`);
+    }
+  },
+  onSessionEnd() {
+    if (!activeConversationId) return;
+    try {
+      endConversation(activeConversationId);
+    } catch (error) {
+      byId('history-status').textContent = `Conversation could not be finalized: ${error.message}`;
+      showHistoryWarning(`Conversation could not be finalized: ${error.message}`);
+    }
+    activeConversationId = undefined;
   },
   onError(message) { status.textContent = message; },
   onActive(value) {
@@ -53,7 +80,35 @@ function showSettings() {
   const configured = Boolean(getChatGptDestination(CONFIG.chatgptUrl));
   byId('destination-status').textContent = configured ? 'Configured' : 'Not Configured';
   byId('setup-help').hidden = configured;
+  renderHistory();
   if (!dialog.open) dialog.showModal();
+}
+
+function renderHistory() {
+  const list = byId('history-list');
+  list.replaceChildren();
+  try {
+    const conversations = listConversations();
+    byId('history-status').textContent = conversations.length
+      ? `Saved on this device only. The most recent ${conversations.length} conversation${conversations.length === 1 ? '' : 's'} are shown.`
+      : 'No saved conversations yet.';
+    for (const conversation of conversations) {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      const firstUserMessage = conversation.messages.find((message) => message.role === 'user')?.text;
+      summary.textContent = `${new Date(conversation.startedAt).toLocaleString()} — ${firstUserMessage || 'Conversation started'}`;
+      details.append(summary);
+      for (const message of conversation.messages) {
+        const line = document.createElement('p');
+        line.className = 'history-message';
+        line.textContent = `${message.role === 'user' ? 'Viraj' : 'Buddy'}: ${message.text}`;
+        details.append(line);
+      }
+      list.append(details);
+    }
+  } catch (error) {
+    byId('history-status').textContent = `Conversation history could not be read: ${error.message}`;
+  }
 }
 
 function resetLauncher() {
@@ -91,6 +146,16 @@ function openBuddy(mode) {
 }
 
 function startVoice() {
+  try {
+    activeConversationId = startConversation();
+    voice.historyContext = buildHistoryContext();
+    showHistoryWarning();
+  } catch (error) {
+    activeConversationId = undefined;
+    voice.historyContext = '';
+    byId('history-status').textContent = `Conversation history is unavailable: ${error.message}`;
+    showHistoryWarning(`Conversation history is unavailable: ${error.message}`);
+  }
   byId('transcript').hidden = true;
   byId('transcript').textContent = '';
   scene.show('home');
@@ -114,6 +179,15 @@ byId('parent-button').addEventListener('click', showSettings);
 dialog.addEventListener('click', (event) => {
   const box = dialog.getBoundingClientRect();
   if (event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) dialog.close();
+});
+byId('clear-history').addEventListener('click', () => {
+  if (!window.confirm('Clear all conversation history saved on this device? This cannot be undone.')) return;
+  try {
+    clearConversations();
+    renderHistory();
+  } catch (error) {
+    byId('history-status').textContent = `Conversation history could not be cleared: ${error.message}`;
+  }
 });
 // Restore controls after returning via Back (including iOS's back/forward cache).
 window.addEventListener('pageshow', resetLauncher);

@@ -1,6 +1,6 @@
 export class VoiceSession {
-  constructor({ onState, onTranscript, onError, onActive, onAudioBlocked }) {
-    Object.assign(this, { onState, onTranscript, onError, onActive, onAudioBlocked });
+  constructor({ onState, onTranscript, onMessage, onSessionEnd, onError, onActive, onAudioBlocked }) {
+    Object.assign(this, { onState, onTranscript, onMessage, onSessionEnd, onError, onActive, onAudioBlocked });
     this.audio = document.createElement('audio');
     this.audio.autoplay = true;
     this.audio.setAttribute('playsinline', '');
@@ -8,7 +8,7 @@ export class VoiceSession {
     this.generation = 0;
   }
   async start() {
-    this.stop();
+    this.stop(true);
     const generation = this.generation;
     const current = () => generation === this.generation;
     this.onActive(true);
@@ -33,7 +33,13 @@ export class VoiceSession {
         if (!current()) return;
         clearTimeout(this.connectTimer);
         this.onState('listening');
-        this.send({ type: 'response.create', response: { instructions: 'Say a short hello, introduce yourself as Buddy the AI adventure character, and ask where we should explore with our grown-up.' } });
+        if (this.historyContext) {
+          this.send({ type: 'conversation.item.create', item: {
+            type: 'message', role: 'user',
+            content: [{ type: 'input_text', text: this.historyContext }]
+          } });
+        }
+        this.send({ type: 'response.create', response: { instructions: 'Ignore background noise and focus on the spoken words of the person talking to you. If a child and an elder are speaking at once, prioritize the child\'s words. Keep replies short, warm, and playful, and ask one simple question at a time.' } });
       };
       channel.onmessage = event => {
         if (!current()) return;
@@ -65,6 +71,10 @@ export class VoiceSession {
   send(event) { if (this.channel?.readyState === 'open') this.channel.send(JSON.stringify(event)); }
   handle(event) {
     switch (event.type) {
+      case 'conversation.item.input_audio_transcription.completed':
+      case 'input_audio_transcription.completed':
+        if (event.transcript) this.onMessage?.('user', event.transcript);
+        break;
       case 'input_audio_buffer.speech_started': this.onState('listening'); break;
       case 'input_audio_buffer.speech_stopped': this.onState('thinking'); break;
       case 'response.created': this.transcript = ''; this.onState('thinking'); break;
@@ -75,7 +85,12 @@ export class VoiceSession {
         this.transcript = (this.transcript || '') + event.delta;
         this.onTranscript(this.transcript); break;
       case 'response.output_audio_transcript.done':
-        this.onTranscript(event.transcript || this.transcript || ''); break;
+        {
+          const transcript = event.transcript || this.transcript || '';
+          this.onTranscript(transcript);
+          if (transcript) this.onMessage?.('assistant', transcript);
+          break;
+        }
       case 'response.done':
         if (['failed', 'cancelled', 'incomplete'].includes(event.response?.status)) this.onState('listening');
         if (event.response?.status === 'failed') this.fail('Buddy could not answer. Please reconnect and try again.');
@@ -89,7 +104,7 @@ export class VoiceSession {
     catch { this.onError('Sound is blocked. Check the browser sound settings.'); }
   }
   fail(message) { this.stop(); this.onError(message); }
-  stop() {
+  stop(preserveConversation = false) {
     this.generation++;
     clearTimeout(this.connectTimer);
     clearTimeout(this.limitTimer);
@@ -103,5 +118,6 @@ export class VoiceSession {
     this.onAudioBlocked(false);
     this.onActive(false);
     this.onState('idle');
+    if (!preserveConversation) this.onSessionEnd?.();
   }
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createBuddyServer } from '../server/index.mjs';
 import { sceneForText } from '../web/js/scenes.js';
 import { VoiceSession } from '../web/js/voice.js';
+import { readFile } from 'node:fs/promises';
 
 test('scene follows the latest topic and keeps the previous illustration for unrelated speech', () => {
   assert.equal(sceneForText('We left the ocean. Here is a rocket!'), 'space');
@@ -12,23 +13,31 @@ test('scene follows the latest topic and keeps the previous illustration for unr
 });
 
 test('speech gestures end with audio playback, not with generation completion', () => {
-  const states = [], captions = [];
+  const states = [], captions = [], messages = [];
   const session = Object.create(VoiceSession.prototype);
   session.onState = state => states.push(state);
   session.onTranscript = text => captions.push(text);
+  session.onMessage = (role, text) => messages.push({ role, text });
+  session.handle({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'Let us explore the ocean.' });
   session.handle({ type: 'response.created' });
   session.handle({ type: 'response.output_audio_transcript.delta', delta: 'A rocket' });
+  session.handle({ type: 'response.output_audio_transcript.done', transcript: 'A rocket!' });
   session.handle({ type: 'output_audio_buffer.started' });
   session.handle({ type: 'response.done', response: { status: 'completed' } });
   assert.equal(states.at(-1), 'talking');
   session.handle({ type: 'output_audio_buffer.stopped' });
   assert.equal(states.at(-1), 'listening');
-  assert.deepEqual(captions, ['A rocket']);
+  assert.deepEqual(captions, ['A rocket', 'A rocket!']);
+  assert.deepEqual(messages, [
+    { role: 'user', text: 'Let us explore the ocean.' },
+    { role: 'assistant', text: 'A rocket!' }
+  ]);
   session.handle({ type: 'input_audio_buffer.speech_started' });
   assert.equal(states.at(-1), 'listening');
 });
 
 test('backend allows direct voice access, checks origin, and forwards a fixed voice session', async t => {
+  const masterPrompt = (await readFile(new URL('../server/master-prompt.md', import.meta.url), 'utf8')).trim();
   let outbound;
   const server = createBuddyServer({ env: { OPENAI_API_KEY: 'test-secret', BUDDY_ORIGIN: 'http://localhost' }, fetcher: async (url, options) => {
     outbound = { url, options };
@@ -47,7 +56,11 @@ test('backend allows direct voice access, checks origin, and forwards a fixed vo
   assert.equal(outbound.options.headers.Authorization, 'Bearer test-secret');
   const session = JSON.parse(outbound.options.body.get('session'));
   assert.equal(session.type, 'realtime');
-  assert.equal(session.audio.input.turn_detection.interrupt_response, true);
+  assert.equal(session.audio.input.turn_detection.interrupt_response, false);
+  assert.equal(session.audio.input.turn_detection.threshold, 0.7);
+  assert.equal(session.audio.input.turn_detection.silence_duration_ms, 900);
+  assert.equal(session.audio.input.transcription.model, 'gpt-4o-mini-transcribe');
+  assert.equal(session.instructions, masterPrompt);
   assert.equal((await fetch(base + '/')).status, 200);
   assert.equal((await fetch(base + '/server/index.mjs')).status, 404);
   assert.equal((await fetch(base + '/.env')).status, 404);

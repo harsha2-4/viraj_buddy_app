@@ -66,6 +66,7 @@
         <button id="photo-button" class="action action-secondary" type="button" aria-label="Show Buddy Something — open ChatGPT"><span class="action-icon" aria-hidden="true">📷</span><span>Show Buddy Something</span></button>
       </div>
       <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true">What should we talk about today?</p>
+      <p id="history-warning" class="history-warning" role="status" hidden></p>
       <p id="transcript" class="transcript" hidden></p>
       <p class="voice-note">An AI voice, a little imagination, and a grown-up by your side.</p>
       <noscript><p>Please ask a grown-up to enable JavaScript to open Buddy.</p></noscript>
@@ -106,6 +107,12 @@
       <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
       <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
       <p>Show Buddy Something opens the separate ChatGPT destination for photos. That conversation does not control this character.</p>
+      <section class="history-panel" aria-labelledby="history-heading">
+        <h3 id="history-heading">Conversation history</h3>
+        <p id="history-status" role="status">History is saved on this device only.</p>
+        <div id="history-list"></div>
+        <button id="clear-history" class="history-clear" type="button">Clear conversation history</button>
+      </section>
       <form method="dialog"><button class="close-button" autofocus>Close</button></form>
     </div>
   </dialog>
