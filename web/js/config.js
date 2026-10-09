@@ -5,7 +5,7 @@
 export const CONFIG = {
   childName: "Viraj",
   appName: "Viraj AI Buddy",
-  chatgptUrl: "REPLACE_WITH_CHATGPT_PROJECT_URL",
+  chatgptUrl: "https://chatgpt.com/g/g-p-6ac90a36e7a8819180fff03635c88fc3/project",
   enableCameraButton: true,
   enableAnimations: true,
   debugMode: false
