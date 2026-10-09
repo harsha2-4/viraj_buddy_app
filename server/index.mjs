@@ -2,7 +2,6 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { timingSafeEqual, createHash } from 'node:crypto';
 
 const web = path.resolve(fileURLToPath(new URL('../web/', import.meta.url)));
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json' };
@@ -20,7 +19,7 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
       const url = new URL(req.url, 'http://localhost');
       if (url.pathname === '/api/session') {
         if (req.method !== 'POST') return send(405, { error: 'Use POST.' });
-        if (!env.OPENAI_API_KEY || !env.BUDDY_ACCESS_CODE) return send(503, { error: 'A grown-up needs to configure the voice server first.' });
+        if (!env.OPENAI_API_KEY) return send(503, { error: 'Voice service is not configured. Ask the owner to check the server.' });
         const expectedOrigin = env.BUDDY_ORIGIN || 'http://localhost:8080';
         if (req.headers.origin !== expectedOrigin) return send(403, { error: 'Open Buddy at its configured address.' });
         const now = Date.now();
@@ -29,8 +28,6 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
         const entry = attempts.get(ip) || { count: 0, until: now + 60000 };
         attempts.set(ip, entry);
         if (++entry.count > 8) return send(429, { error: 'Please wait a minute before trying again.' });
-        const digest = value => createHash('sha256').update(value).digest();
-        if (!timingSafeEqual(digest(req.headers.authorization || ''), digest(`Bearer ${env.BUDDY_ACCESS_CODE}`))) return send(401, { error: 'Ask a grown-up to check the family access code.' });
         if (!(req.headers['content-type'] || '').startsWith('application/sdp')) return send(415, { error: 'Expected a voice connection offer.' });
         let sdp = '';
         for await (const chunk of req) {

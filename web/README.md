@@ -25,7 +25,7 @@ Other web settings: `childName`, `appName`, `enableCameraButton`,
 `enableAnimations`, `debugMode`. Names in the manifest/Apple metadata and native
 strings are branding, so update those separately if renaming the whole app.
 
-Talk to Buddy starts the in-app voice flow with an adult and a family access code.
+Talk to Buddy starts the in-app voice flow directly; the browser asks permission to use the microphone.
 Show Buddy Something opens the configured external ChatGPT destination for photos.
 These conversations are independent.
 

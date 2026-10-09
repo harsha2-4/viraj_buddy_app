@@ -28,19 +28,18 @@ test('speech gestures end with audio playback, not with generation completion', 
   assert.equal(states.at(-1), 'listening');
 });
 
-test('backend protects credentials, checks origin/auth, and forwards a fixed voice session', async t => {
+test('backend allows direct voice access, checks origin, and forwards a fixed voice session', async t => {
   let outbound;
-  const server = createBuddyServer({ env: { OPENAI_API_KEY: 'test-secret', BUDDY_ACCESS_CODE: 'family-code', BUDDY_ORIGIN: 'http://localhost' }, fetcher: async (url, options) => {
+  const server = createBuddyServer({ env: { OPENAI_API_KEY: 'test-secret', BUDDY_ORIGIN: 'http://localhost' }, fetcher: async (url, options) => {
     outbound = { url, options };
     return new Response('v=0\r\nanswer');
   } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => { server.closeAllConnections(); server.close(); });
   const base = `http://127.0.0.1:${server.address().port}`;
-  const headers = { Origin: 'http://localhost', Authorization: 'Bearer family-code', 'Content-Type': 'application/sdp' };
+  const headers = { Origin: 'http://localhost', 'Content-Type': 'application/sdp' };
   const post = overrides => fetch(base + '/api/session', { method: 'POST', headers: { ...headers, ...overrides }, body: 'v=0\r\noffer' });
   assert.equal((await post({ Origin: 'https://evil.test' })).status, 403);
-  assert.equal((await post({ Authorization: 'Bearer wrong' })).status, 401);
   assert.equal(outbound, undefined);
   const response = await post({});
   assert.equal(response.status, 200);
@@ -55,12 +54,12 @@ test('backend protects credentials, checks origin/auth, and forwards a fixed voi
   assert.equal((await fetch(base + '/js/voice.js')).status, 200);
 });
 
-test('missing credentials and upstream failure are explicit without exposing secrets', async t => {
+test('missing API key and upstream failure are explicit without exposing secrets', async t => {
   for (const configured of [false, true]) {
-    const server = createBuddyServer({ env: configured ? { OPENAI_API_KEY: 'secret', BUDDY_ACCESS_CODE: 'code', BUDDY_ORIGIN: 'http://localhost' } : {}, fetcher: async () => new Response('private error', { status: 401 }) });
+    const server = createBuddyServer({ env: configured ? { OPENAI_API_KEY: 'secret', BUDDY_ORIGIN: 'http://localhost' } : {}, fetcher: async () => new Response('private error', { status: 401 }) });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     t.after(() => { server.closeAllConnections(); server.close(); });
-    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/session`, { method: 'POST', headers: { Origin: 'http://localhost', Authorization: 'Bearer code', 'Content-Type': 'application/sdp' }, body: 'v=0' });
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/api/session`, { method: 'POST', headers: { Origin: 'http://localhost', 'Content-Type': 'application/sdp' }, body: 'v=0' });
     assert.equal(response.status, configured ? 502 : 503);
     assert.doesNotMatch(await response.text(), /private error|secret/);
   }

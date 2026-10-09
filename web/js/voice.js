@@ -7,7 +7,7 @@ export class VoiceSession {
     document.body.append(this.audio);
     this.generation = 0;
   }
-  async start(code) {
+  async start() {
     this.stop();
     const generation = this.generation;
     const current = () => generation === this.generation;
@@ -47,7 +47,7 @@ export class VoiceSession {
       if (!current()) return;
       await pc.setLocalDescription(offer);
       const response = await fetch('/api/session', {
-        method: 'POST', headers: { 'Content-Type': 'application/sdp', Authorization: `Bearer ${code}` },
+        method: 'POST', headers: { 'Content-Type': 'application/sdp' },
         body: offer.sdp, signal: this.controller.signal
       });
       if (!current()) return;
@@ -57,7 +57,7 @@ export class VoiceSession {
       }
       const sdp = await response.text();
       if (current()) await pc.setRemoteDescription({ type: 'answer', sdp });
-      if (current()) this.limitTimer = setTimeout(() => this.fail('Time for a little break! Start again with your grown-up when ready.'), 10 * 60 * 1000);
+      if (current()) this.limitTimer = setTimeout(() => this.fail('Time for a little break! Start again with a grown-up when ready.'), 10 * 60 * 1000);
     } catch (error) {
       if (current()) this.fail(error.name === 'NotAllowedError' ? 'Microphone access was not allowed. A grown-up can enable it and try again.' : error.message);
     }

@@ -14,15 +14,20 @@ response arrives; topic changes may slightly precede the corresponding audio.
 Use Node 22.9 or newer. There are no npm dependencies.
 
 1. Copy `.env.example` to `.env` in the repository root.
-2. Set `OPENAI_API_KEY` and a long, private `BUDDY_ACCESS_CODE` there.
+2. Set `OPENAI_API_KEY` there.
 3. Run `npm start`, then open `http://localhost:8080`.
-4. Choose **Talk to Buddy**, enter the family access code, and start with a grown-up.
-5. Allow microphone access. Use **Mute microphone** or **End conversation** at any time.
+4. Choose **Talk to Buddy** and allow microphone access. Use **Mute microphone** or
+   **End conversation** at any time.
 
 Never enter your API key in the app or commit it. Only the server uses it.
-The family code is a shared access credential: use a strong random value and keep
-it private. The app holds it only in page memory. Audio goes directly to OpenAI;
-the server exchanges connection offers and does not record audio or transcripts.
+The voice endpoint is intentionally available without a family code. Anyone who
+can reach the public app can start a session. The Origin check rejects ordinary
+cross-site browser requests, but is not authentication. The server limits
+connection attempts to eight per minute per source address; this is not a billing
+cap. Set the lowest available API usage budget and billing alerts, and verify
+whether your budget blocks requests or only sends notifications. Audio goes
+directly to OpenAI; the server exchanges connection offers and does not record
+audio or transcripts.
 This is a new API conversation, not the existing ChatGPT project's history.
 API usage requires a funded API account and is separate from a ChatGPT subscription.
 
@@ -31,7 +36,7 @@ API usage requires a funded API account and is separate from a ChatGPT subscript
 Run the Node server behind HTTPS on a host that supports a persistent Node process.
 Set `HOST=0.0.0.0`, the host's `PORT`, and `BUDDY_ORIGIN` to the exact HTTPS origin
 (no trailing slash). Serve the app and `/api/session` together at the origin root.
-Store the two secrets using the host's environment settings. Static GitHub Pages
+Store the API key using the host's environment settings. Static GitHub Pages
 hosting alone cannot run voice. The existing Pages workflow only deploys the UI.
 
 For Android, set `voiceAppUrl` in `web/js/config.js` to this hosted HTTPS URL and
@@ -42,15 +47,15 @@ WebRTC support; test on the actual Fire device before distributing. iPhone uses
 the same hosted app in Safari or as a Home Screen PWA.
 
 Leaving or backgrounding the voice screen ends the media session. Sessions in the
-UI stop after ten minutes. The backend limits connection attempts to eight per
-minute per source address; this is a small-family starter, not multi-user account
-authentication or a hard billing limit. Configure API project spending controls
-before public deployment. Behind a proxy, the per-address limit is shared unless
+UI stop after ten minutes. The endpoint is public and the backend limits connection
+attempts to eight per minute per source address; this is not authentication or a
+hard billing limit. Configure API usage budgets and alerts before public deployment.
+Behind a proxy, the per-address limit is shared unless
 the host preserves source addresses; forwarded headers are deliberately untrusted.
 
 ## Validation
 
-`npm test` exercises scene selection, playback state handling, origin/auth checks,
+`npm test` exercises scene selection, playback state handling, origin checks,
 server failures, static-file boundaries, and offline caching. `python scripts/validate.py`
 checks asset references and Android resources. Live calls require your credentials,
 HTTPS, and microphone access; mocked tests cannot verify voice quality or device support.

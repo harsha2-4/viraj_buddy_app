@@ -28,7 +28,11 @@ require('node:fs').mkdirSync('.local', { recursive: true });
     const page = await context.newPage();
     const errors=[];
     page.on('pageerror',error=>errors.push(error.message));
-    await page.route('**/api/session',route=>route.fulfill({status:200,contentType:'application/sdp',body:'v=0'}));
+    let sessionHeaders;
+    await page.route('**/api/session',route=>{
+      sessionHeaders=route.request().headers();
+      return route.fulfill({status:200,contentType:'application/sdp',body:'v=0'});
+    });
     for(const [name,width,height] of [['phone',390,844],['small',320,568],['tablet',1280,800],['desktop',1440,1000]]) {
       await page.setViewportSize({width,height});
       await page.goto(base);
@@ -36,10 +40,10 @@ require('node:fs').mkdirSync('.local', { recursive: true });
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' overflow');
       await page.screenshot({path:`.local/voice-${name}.png`,fullPage:true});
     }
+    assert.equal(await page.locator('#access-code').count(),0);
     await page.click('#talk-button');
-    await page.fill('#access-code','test-code');
-    await page.click('#start-voice');
     await page.waitForFunction(()=>window.peer && document.querySelector('#avatar').dataset.state==='listening');
+    assert.equal(sessionHeaders.authorization,undefined);
     await page.evaluate(()=>{
       emitVoice({type:'response.created'});
       emitVoice({type:'response.output_audio_transcript.delta',delta:'Let’s fly a rocket to the moon!'});
@@ -68,20 +72,17 @@ require('node:fs').mkdirSync('.local', { recursive: true });
       navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>window.resolveMic=resolve);
     });
     await page.click('#talk-button');
-    await page.click('#start-voice');
     await page.click('#end-button');
     await page.evaluate(()=>window.resolveMic({getTracks:()=>[window.mic],getAudioTracks:()=>[window.mic]}));
     await page.waitForFunction(()=>window.trackStopped);
     assert.equal(await page.locator('#avatar').getAttribute('data-state'),'idle');
     await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});
     await page.click('#talk-button');
-    await page.click('#start-voice');
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('not allowed'));
     await page.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>({getTracks:()=>[window.mic],getAudioTracks:()=>[window.mic]});});
     await page.unroute('**/api/session');
     await page.click('#talk-button');
-    await page.click('#start-voice');
-    await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('configure the voice server'));
+    await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('not configured'));
     assert.ok(await page.evaluate(()=>window.trackStopped && window.peer.closed));
     assert.deepEqual(errors,[]);
     console.log('PASS: four responsive layouts, scene/caption updates, playback states, mute, reduced motion, end cleanup, pending permission cancellation, denied microphone, missing-server cleanup; no browser exceptions.');

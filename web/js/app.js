@@ -90,21 +90,13 @@ function openBuddy(mode) {
   navigationTimer = setTimeout(() => window.location.assign(destination), 450);
 }
 
-talkButton.addEventListener('click', showSettings);
-byId('start-voice').addEventListener('click', () => {
-  const code = byId('access-code').value.trim();
-  if (!code) {
-    byId('access-code').setCustomValidity('Please enter your family access code.');
-    byId('access-code').reportValidity();
-    return;
-  }
-  dialog.close();
+function startVoice() {
   byId('transcript').hidden = true;
   byId('transcript').textContent = '';
   scene.show('home');
-  voice.start(code);
-});
-byId('access-code').addEventListener('input', () => byId('access-code').setCustomValidity(''));
+  voice.start();
+}
+talkButton.addEventListener('click', startVoice);
 byId('end-button').addEventListener('click', () => {
   voice.stop();
   status.textContent = 'See you on our next adventure!';
