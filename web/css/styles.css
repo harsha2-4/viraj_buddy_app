@@ -423,6 +423,40 @@ dialog::backdrop {
   padding-top: 12px;
 }
 
+.screen-settings {
+  margin-top: 20px;
+  border-top: 1px solid #d8ded0;
+  padding-top: 12px;
+}
+
+.screen-settings h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.screen-awake-setting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.screen-awake-setting input {
+  width: 20px;
+  height: 20px;
+  accent-color: #338471;
+  flex: 0 0 auto;
+}
+
+#screen-awake-status {
+  margin-bottom: 0;
+  font-size: 12px;
+}
+
 .history-warning {
   color: #873e35;
   font-size: 13px;

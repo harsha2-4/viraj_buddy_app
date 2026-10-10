@@ -49,7 +49,7 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
         form.set('sdp', sdp);
         const sessionBody = buildRealtimeSessionConfig({
           instructions,
-          model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
+          model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1-mini',
           voice: env.OPENAI_REALTIME_VOICE || 'ash',
           noiseReduction: env.OPENAI_REALTIME_NOISE_REDUCTION || audioConfig.noiseReduction,
           vad: {

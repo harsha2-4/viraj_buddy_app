@@ -71,6 +71,16 @@ tablet microphone is farther away. The threshold can be tuned from 0.5 to 0.8;
 prefix padding and silence are kept at or above 300 ms and 1000 ms so a child's
 pauses are not prematurely treated as a completed turn.
 
+The Parents settings include **Keep Screen Awake During Conversation**, on by
+default. When available in a secure browser context, the app requests the Screen
+Wake Lock API while voice is active, keeps it through silence, and requests it
+again when the app becomes visible. End the voice session or turn the setting
+off to release it. Browser, operating-system, battery-saver, and device policy
+can deny or release wake locks; the setting cannot override those restrictions.
+If unavailable, use iPhone/iPad **Settings → Display & Brightness → Auto-Lock**
+or the Fire tablet's **Display → Sleep** setting. Browser support differs by
+device and browser version; verify on the target device.
+
 User transcripts are captured using Realtime input transcription and stored
 locally alongside Buddy's completed reply transcripts. Audio is not saved by the
 app. Browser storage can be removed by clearing site data, uninstalling the PWA,

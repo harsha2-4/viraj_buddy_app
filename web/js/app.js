@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { audioConfig } from './audioConfig.js';
+import { WakeLockController, wakeLockStatusMessage } from './wakeLock.js';
 import { AvatarController } from './animations.js';
 import { getChatGptDestination } from './navigation.js';
 import { VoiceSession } from './voice.js';
@@ -11,6 +12,28 @@ const showHistoryWarning = (message = '') => {
   byId('history-warning').textContent = message;
   byId('history-warning').hidden = !message;
 };
+const screenAwakeKey = 'viraj-buddy:keep-screen-awake:v1';
+const screenAwakeToggle = byId('keep-screen-awake');
+const screenAwakeValue = byId('screen-awake-value');
+const screenAwakeStatus = byId('screen-awake-status');
+let keepScreenAwake = true;
+try {
+  keepScreenAwake = localStorage.getItem(screenAwakeKey) !== 'false';
+} catch {
+  screenAwakeStatus.textContent = 'This browser cannot save the screen-awake preference. It will remain on for this page.';
+}
+screenAwakeToggle.checked = keepScreenAwake;
+screenAwakeValue.textContent = keepScreenAwake ? 'ON' : 'OFF';
+const wakeLock = new WakeLockController({
+  onStatus(state) {
+    screenAwakeStatus.textContent = wakeLockStatusMessage(state);
+  }
+});
+if (!wakeLock.supported) {
+  screenAwakeStatus.textContent = wakeLockStatusMessage('unsupported');
+} else {
+  screenAwakeStatus.textContent = wakeLockStatusMessage(keepScreenAwake ? 'ready' : 'disabled');
+}
 const avatar = new AvatarController(byId('avatar'), { enabled: CONFIG.enableAnimations });
 const talkButton = byId('talk-button');
 const photoButton = byId('photo-button');
@@ -62,6 +85,8 @@ const voice = new VoiceSession({
   onError(message) { status.textContent = message; },
   onActive(value) {
     active = value;
+    if (value && keepScreenAwake) wakeLock.start();
+    else wakeLock.stop();
     talkButton.hidden = value;
     photoButton.hidden = value || !CONFIG.enableCameraButton;
     byId('voice-controls').hidden = !value;
@@ -178,6 +203,16 @@ byId('mute-button').addEventListener('click', () => {
   byId('mute-button').setAttribute('aria-pressed', String(muted));
 });
 byId('enable-audio').addEventListener('click', () => voice.enableAudio());
+screenAwakeToggle.addEventListener('change', () => {
+  keepScreenAwake = screenAwakeToggle.checked;
+  screenAwakeValue.textContent = keepScreenAwake ? 'ON' : 'OFF';
+  wakeLock.setEnabled(keepScreenAwake);
+  try {
+    localStorage.setItem(screenAwakeKey, String(keepScreenAwake));
+  } catch {
+    screenAwakeStatus.textContent = 'This browser cannot save the screen-awake preference. The current choice still applies until the page closes.';
+  }
+});
 photoButton.addEventListener('click', () => openBuddy('photo'));
 byId('parent-button').addEventListener('click', showSettings);
 dialog.addEventListener('click', (event) => {
@@ -195,9 +230,8 @@ byId('clear-history').addEventListener('click', () => {
 });
 // Restore controls after returning via Back (including iOS's back/forward cache).
 window.addEventListener('pageshow', resetLauncher);
-window.addEventListener('pagehide', () => { clearTimeout(navigationTimer); voice.stop(); });
+window.addEventListener('pagehide', () => clearTimeout(navigationTimer));
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && active) { voice.stop(); status.textContent = 'Conversation paused. Tap Talk to Buddy to start again.'; }
   if (!document.hidden && opening) resetLauncher();
 });
 

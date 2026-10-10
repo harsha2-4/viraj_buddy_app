@@ -107,6 +107,14 @@
       <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
       <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
       <p>Show Buddy Something opens the separate ChatGPT destination for photos. That conversation does not control this character.</p>
+      <section class="screen-settings" aria-labelledby="screen-settings-heading">
+        <h3 id="screen-settings-heading">Conversation display</h3>
+        <label class="screen-awake-setting">
+          <input id="keep-screen-awake" type="checkbox" checked>
+          <span>Keep Screen Awake During Conversation: <strong id="screen-awake-value">ON</strong></span>
+        </label>
+        <p id="screen-awake-status" role="status">The screen wake lock is requested during voice conversations when supported.</p>
+      </section>
       <section class="history-panel" aria-labelledby="history-heading">
         <h3 id="history-heading">Conversation history</h3>
         <p id="history-status" role="status">History is saved on this device only.</p>
