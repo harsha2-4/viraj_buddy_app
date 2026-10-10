@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { buildRealtimeSessionConfig } from '../web/js/audioConfig.js';
 
 const web = path.resolve(fileURLToPath(new URL('../web/', import.meta.url)));
 const masterPromptPath = fileURLToPath(new URL('./master-prompt.md', import.meta.url));
@@ -46,12 +47,20 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
         if (!sdp.startsWith('v=0')) return send(400, { error: 'Invalid connection offer.' });
         const form = new FormData();
         form.set('sdp', sdp);
-        form.set('session', JSON.stringify({
-          type: 'realtime', model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
+        const sessionBody = buildRealtimeSessionConfig({
           instructions,
-          max_output_tokens: 400,
-          audio: { input: { transcription: { model: 'gpt-4o-mini-transcribe' }, turn_detection: { type: 'server_vad', threshold: 0.7, prefix_padding_ms: 300, silence_duration_ms: 900, interrupt_response: false, create_response: true } }, output: { voice: 'marin' } }
-        }));
+          model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
+          voice: env.OPENAI_REALTIME_VOICE || 'marin',
+          noiseReduction: env.OPENAI_REALTIME_NOISE_REDUCTION || 'near_field',
+          vad: {
+            threshold: Number(env.OPENAI_REALTIME_VAD_THRESHOLD || 0.7),
+            prefixPaddingMs: Number(env.OPENAI_REALTIME_VAD_PREFIX_PADDING_MS || 300),
+            silenceDurationMs: Number(env.OPENAI_REALTIME_VAD_SILENCE_DURATION_MS || 1000),
+            createResponse: true,
+            interruptResponse: false
+          }
+        });
+        form.set('session', JSON.stringify(sessionBody));
         const upstream = await fetcher('https://api.openai.com/v1/realtime/calls', {
           method: 'POST', headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
           body: form, signal: AbortSignal.timeout(25000)

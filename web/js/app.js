@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { audioConfig } from './audioConfig.js';
 import { AvatarController } from './animations.js';
 import { getChatGptDestination } from './navigation.js';
 import { VoiceSession } from './voice.js';
@@ -22,6 +23,9 @@ let muted = false;
 let activeConversationId;
 const scene = new SceneController(byId('scene'));
 const states = { idle: 'Your AI adventure buddy', connecting: 'Connecting…', listening: 'I’m listening', thinking: 'Let me think…', talking: 'Buddy is talking' };
+if (audioConfig.debug.enabled) {
+  console.info('[Buddy audio config]', audioConfig);
+}
 const voice = new VoiceSession({
   onState(state) {
     avatar.setState(state);
