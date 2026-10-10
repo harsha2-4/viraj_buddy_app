@@ -54,7 +54,22 @@ most recent theme.
 
 Voice activity detection uses a higher speech threshold and a longer silence
 window so incidental sounds are less likely to start a turn. Barge-in is disabled,
-and Buddy's session instructions prioritize the child's words when voices overlap.
+and Sillyface's session instructions prioritize Viraj's words when voices
+overlap. The defaults request browser echo cancellation, noise suppression, and
+automatic gain control when the browser reports support. Realtime noise
+reduction defaults to `near_field`; `far_field` is available for more distant
+tablet microphones. VAD configuration cannot be lowered below a 0.5 threshold,
+300 ms prefix padding, or 1000 ms silence window, preserving time for a child's
+soft or paused speech. These features reduce noise; they do not identify who is
+speaking.
+
+The server defaults are `OPENAI_REALTIME_NOISE_REDUCTION=near_field`,
+`OPENAI_REALTIME_VAD_THRESHOLD=0.7`,
+`OPENAI_REALTIME_VAD_PREFIX_PADDING_MS=300`, and
+`OPENAI_REALTIME_VAD_SILENCE_DURATION_MS=1000`. Use `far_field` only when the
+tablet microphone is farther away. The threshold can be tuned from 0.5 to 0.8;
+prefix padding and silence are kept at or above 300 ms and 1000 ms so a child's
+pauses are not prematurely treated as a completed turn.
 
 User transcripts are captured using Realtime input transcription and stored
 locally alongside Buddy's completed reply transcripts. Audio is not saved by the

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createBuddyServer } from '../server/index.mjs';
 import { sceneForText } from '../web/js/scenes.js';
 import { VoiceSession } from '../web/js/voice.js';
+import { audioConfig, buildRealtimeSessionConfig } from '../web/js/audioConfig.js';
 import { readFile } from 'node:fs/promises';
 
 test('scene follows the latest topic and keeps the previous illustration for unrelated speech', () => {
@@ -34,6 +35,29 @@ test('speech gestures end with audio playback, not with generation completion', 
   ]);
   session.handle({ type: 'input_audio_buffer.speech_started' });
   assert.equal(states.at(-1), 'listening');
+});
+
+test('realtime audio keeps child-friendly noise reduction and VAD floors', () => {
+  const defaults = buildRealtimeSessionConfig();
+  assert.equal(defaults.audio.input.noise_reduction.type, 'near_field');
+  assert.equal(defaults.audio.input.turn_detection.threshold, 0.7);
+  assert.equal(defaults.audio.input.turn_detection.prefix_padding_ms, 300);
+  assert.equal(defaults.audio.input.turn_detection.silence_duration_ms, 1000);
+  assert.equal(defaults.audio.input.turn_detection.interrupt_response, false);
+  assert.equal(defaults.audio.input.turn_detection.create_response, true);
+
+  const tabletProfile = buildRealtimeSessionConfig({
+    noiseReduction: 'far_field',
+    vad: { threshold: 0.4, prefixPaddingMs: 100, silenceDurationMs: 500 }
+  });
+  assert.equal(tabletProfile.audio.input.noise_reduction.type, 'far_field');
+  assert.equal(tabletProfile.audio.input.turn_detection.threshold, 0.5);
+  assert.equal(tabletProfile.audio.input.turn_detection.prefix_padding_ms, 300);
+  assert.equal(tabletProfile.audio.input.turn_detection.silence_duration_ms, 1000);
+  assert.throws(() => buildRealtimeSessionConfig({ noiseReduction: 'invalid' }), RangeError);
+  assert.equal(audioConfig.microphone.noiseSuppression, true);
+  assert.equal(audioConfig.microphone.echoCancellation, true);
+  assert.equal(audioConfig.microphone.autoGainControl, true);
 });
 
 test('backend allows direct voice access, checks origin, and forwards a fixed voice session', async t => {

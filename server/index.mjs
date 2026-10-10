@@ -2,7 +2,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { buildRealtimeSessionConfig } from '../web/js/audioConfig.js';
+import { audioConfig, buildRealtimeSessionConfig } from '../web/js/audioConfig.js';
 
 const web = path.resolve(fileURLToPath(new URL('../web/', import.meta.url)));
 const masterPromptPath = fileURLToPath(new URL('./master-prompt.md', import.meta.url));
@@ -51,11 +51,11 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
           instructions,
           model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
           voice: env.OPENAI_REALTIME_VOICE || 'ash',
-          noiseReduction: env.OPENAI_REALTIME_NOISE_REDUCTION || 'near_field',
+          noiseReduction: env.OPENAI_REALTIME_NOISE_REDUCTION || audioConfig.noiseReduction,
           vad: {
-            threshold: Number(env.OPENAI_REALTIME_VAD_THRESHOLD || 0.7),
-            prefixPaddingMs: Number(env.OPENAI_REALTIME_VAD_PREFIX_PADDING_MS || 300),
-            silenceDurationMs: Number(env.OPENAI_REALTIME_VAD_SILENCE_DURATION_MS || 1000),
+            threshold: Number(env.OPENAI_REALTIME_VAD_THRESHOLD || audioConfig.vad.threshold),
+            prefixPaddingMs: Number(env.OPENAI_REALTIME_VAD_PREFIX_PADDING_MS || audioConfig.vad.prefixPaddingMs),
+            silenceDurationMs: Number(env.OPENAI_REALTIME_VAD_SILENCE_DURATION_MS || audioConfig.vad.silenceDurationMs),
             createResponse: true,
             interruptResponse: false
           }

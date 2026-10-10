@@ -55,7 +55,7 @@ export class VoiceSession {
         this.send({
           type: 'response.create',
           response: {
-            instructions: 'Introduce yourself as Sillyface. Start this session with a fresh, playful topic that is different from the recent topic in the earlier conversation context when possible. Mix a fun idea with one simple fact or thinking game. Keep it short, ask Viraj one easy question, and wait for his answer. Do not ask whether he wants to continue.'
+            instructions: 'Introduce yourself as Sillyface. Start this session with a fresh, playful topic that is different from the recent topic in the earlier conversation context when possible. Mix a fun idea with one simple fact or thinking game. Listen for Viraj, who may speak softly, slowly, or with pauses; prioritize his direct speech over nearby adults, television, and other background sounds. Do not claim to identify a speaker by voice. Keep it short, ask Viraj one easy question, then pause so he can answer. Do not ask whether he wants to continue.'
           }
         });
       };

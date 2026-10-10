@@ -10,6 +10,5 @@ export const CONFIG = {
   voiceAppUrl: "",
   enableCameraButton: true,
   enableAnimations: true,
-  noiseReduction: "near_field",
   debugMode: false
 };
