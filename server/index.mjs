@@ -50,7 +50,7 @@ export function createBuddyServer({ env = process.env, fetcher = fetch } = {}) {
         const sessionBody = buildRealtimeSessionConfig({
           instructions,
           model: env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
-          voice: env.OPENAI_REALTIME_VOICE || 'marin',
+          voice: env.OPENAI_REALTIME_VOICE || 'ash',
           noiseReduction: env.OPENAI_REALTIME_NOISE_REDUCTION || 'near_field',
           vad: {
             threshold: Number(env.OPENAI_REALTIME_VAD_THRESHOLD || 0.7),

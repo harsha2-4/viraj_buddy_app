@@ -69,7 +69,7 @@ export function buildRealtimeSessionConfig({
           interrupt_response: Boolean(vad.interruptResponse ?? false)
         }
       },
-      output: { voice: voice || 'marin' }
+      output: { voice: voice || 'ash' }
     }
   };
 }

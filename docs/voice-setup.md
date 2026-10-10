@@ -44,6 +44,14 @@ Realtime session instruction; it is separate from the short welcome instruction
 used to begin each session. The prompt is guidance, not a substitute for adult
 supervision or product safety controls.
 
+The voice output defaults to OpenAI Realtime's `ash` voice, a masculine-sounding
+option; set `OPENAI_REALTIME_VOICE` in the server environment to another
+supported Realtime voice if desired. Realtime voice choices are separate from
+the voice selected in the ChatGPT app, so the API cannot automatically mirror an
+account's ChatGPT voice. Sillyface opens each session with a fresh topic and
+uses the recent conversation excerpt, when available, to avoid repeating the
+most recent theme.
+
 Voice activity detection uses a higher speech threshold and a longer silence
 window so incidental sounds are less likely to start a turn. Barge-in is disabled,
 and Buddy's session instructions prioritize the child's words when voices overlap.

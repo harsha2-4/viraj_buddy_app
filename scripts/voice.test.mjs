@@ -58,9 +58,12 @@ test('backend allows direct voice access, checks origin, and forwards a fixed vo
   assert.equal(session.type, 'realtime');
   assert.equal(session.audio.input.turn_detection.interrupt_response, false);
   assert.equal(session.audio.input.turn_detection.threshold, 0.7);
-  assert.equal(session.audio.input.turn_detection.silence_duration_ms, 900);
+  assert.equal(session.audio.input.turn_detection.silence_duration_ms, 1000);
   assert.equal(session.audio.input.transcription.model, 'gpt-4o-mini-transcribe');
+  assert.equal(session.audio.output.voice, 'ash');
   assert.equal(session.instructions, masterPrompt);
+  assert.match(session.instructions, /Sillyface/);
+  assert.match(session.instructions, /fresh opening topic/i);
   assert.equal((await fetch(base + '/')).status, 200);
   assert.equal((await fetch(base + '/server/index.mjs')).status, 404);
   assert.equal((await fetch(base + '/.env')).status, 404);

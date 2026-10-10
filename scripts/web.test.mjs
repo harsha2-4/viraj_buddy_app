@@ -101,7 +101,8 @@ async function workerHarness() {
 test('worker precaches only own repository path and cleans only its own old cache', async () => {
   const worker = await workerHarness();
   await worker.lifecycle('install');
-  assert.equal(worker.stored.size, 15);
+  assert.equal(worker.stored.size, 16);
+  assert.ok([...worker.stored.keys()].some(url => url.endsWith('/js/audioConfig.js')));
   for (const url of worker.stored.keys()) assert.ok(url.startsWith(worker.scope));
   await worker.lifecycle('activate');
   assert.deepEqual(worker.deleted, [worker.prefix + 'v0', worker.prefix + 'v2']);

@@ -52,6 +52,12 @@ export class VoiceSession {
             content: [{ type: 'input_text', text: this.historyContext }]
           } });
         }
+        this.send({
+          type: 'response.create',
+          response: {
+            instructions: 'Introduce yourself as Sillyface. Start this session with a fresh, playful topic that is different from the recent topic in the earlier conversation context when possible. Mix a fun idea with one simple fact or thinking game. Keep it short, ask Viraj one easy question, and wait for his answer. Do not ask whether he wants to continue.'
+          }
+        });
       };
       channel.onmessage = event => {
         if (!current()) return;
