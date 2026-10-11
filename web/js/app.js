@@ -5,7 +5,7 @@ import { AvatarController } from './animations.js';
 import { getChatGptDestination } from './navigation.js';
 import { VoiceSession } from './voice.js';
 import { SceneController } from './scenes.js';
-import { addConversationMessage, buildHistoryContext, clearConversations, endConversation, listConversations, startConversation } from './history.js';
+import { addConversationMessage, clearConversations, endConversation, listConversations, startConversation } from './history.js';
 
 const byId = (id) => document.getElementById(id);
 const showHistoryWarning = (message = '') => {
@@ -42,21 +42,18 @@ const status = byId('status');
 let navigationTimer;
 let opening = false;
 let active = false;
+let voiceErrorVisible = false;
 let muted = false;
 let activeConversationId;
 const scene = new SceneController(byId('scene'));
-const states = { idle: 'Your AI adventure buddy', connecting: 'Connecting…', listening: 'I’m listening', thinking: 'Let me think…', talking: 'Buddy is talking' };
+const states = { idle: 'Your AI adventure buddy', connecting: 'Connecting…', listening: 'I’m listening', thinking: 'Let me think…', transcribing: 'I’m listening', generating: 'Let me think…', generatingSpeech: 'Getting ready to speak…', talking: 'Buddy is talking' };
+let conversationMemoryEnabled = true;
 if (audioConfig.debug.enabled) {
   console.info('[Buddy audio config]', audioConfig);
 }
 const voice = new VoiceSession({
-  onState(state) {
-    avatar.setState(state);
-    byId('buddy-state').textContent = states[state];
-    byId('scene').dataset.talking = String(state === 'talking' && CONFIG.enableAnimations);
-    if (state !== 'idle') status.textContent = states[state];
-  },
   onTranscript(text) {
+    voiceErrorVisible = false;
     byId('transcript').hidden = !text;
     byId('transcript').textContent = text;
     scene.follow(text);
@@ -82,7 +79,17 @@ const voice = new VoiceSession({
     }
     activeConversationId = undefined;
   },
-  onError(message) { status.textContent = message; },
+  onError(message) {
+    voiceErrorVisible = true;
+    status.textContent = message;
+  },
+  onState(state) {
+    avatar.setState(state);
+    byId('buddy-state').textContent = states[state];
+    byId('scene').dataset.talking = String(state === 'talking' && CONFIG.enableAnimations);
+    if (state === 'transcribing') voiceErrorVisible = false;
+    if (state !== 'idle' && !voiceErrorVisible) status.textContent = states[state];
+  },
   onActive(value) {
     active = value;
     if (value && keepScreenAwake) wakeLock.start();
@@ -176,19 +183,20 @@ function openBuddy(mode) {
 
 function startVoice() {
   try {
+    voiceErrorVisible = false;
     activeConversationId = startConversation();
-    voice.historyContext = buildHistoryContext();
+    const history = (conversationMemoryEnabled ? listConversations().reverse().flatMap(conversation => conversation.messages) : [])
+      .slice(-12).map(message => ({ role: message.role, content: message.text }));
     showHistoryWarning();
+    byId('transcript').hidden = true;
+    byId('transcript').textContent = '';
+    scene.show('home');
+    voice.start({ history, initialTurnId: crypto.randomUUID() });
   } catch (error) {
     activeConversationId = undefined;
-    voice.historyContext = '';
     byId('history-status').textContent = `Conversation history is unavailable: ${error.message}`;
     showHistoryWarning(`Conversation history is unavailable: ${error.message}`);
   }
-  byId('transcript').hidden = true;
-  byId('transcript').textContent = '';
-  scene.show('home');
-  voice.start();
 }
 talkButton.addEventListener('click', startVoice);
 byId('end-button').addEventListener('click', () => {
@@ -203,6 +211,37 @@ byId('mute-button').addEventListener('click', () => {
   byId('mute-button').setAttribute('aria-pressed', String(muted));
 });
 byId('enable-audio').addEventListener('click', () => voice.enableAudio());
+byId('verify-voice-setup').addEventListener('click', async () => {
+  byId('voice-setup-status').textContent = 'Checking Groq model availability…';
+  try {
+    const response = await fetch('/api/voice/models', { signal: AbortSignal.timeout(15000) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Could not check voice setup.');
+    Object.assign(audioConfig.microphone, {
+      echoCancellation: result.voice?.echoCancellation !== false,
+      noiseSuppression: result.voice?.noiseSuppression !== false,
+      autoGainControl: result.voice?.autoGainControl !== false
+    });
+    if (Number.isFinite(result.voice?.endSilenceMs)) audioConfig.vad.endSilenceMs = result.voice.endSilenceMs;
+    if (Number.isFinite(result.voice?.minSpeechMs)) audioConfig.minSpeechMs = result.voice.minSpeechMs;
+    if (Number.isFinite(result.voice?.maxUtteranceMs)) audioConfig.vad.maxUtteranceMs = result.voice.maxUtteranceMs;
+    if (Number.isFinite(result.voice?.vadThreshold)) audioConfig.vad.absoluteThreshold = result.voice.vadThreshold;
+    if (Number.isFinite(result.voice?.vadNoiseMultiplier)) audioConfig.vad.noiseMultiplier = result.voice.vadNoiseMultiplier;
+    conversationMemoryEnabled = result.voice?.conversationMemoryEnabled !== false;
+    byId('conversation-memory-status')?.replaceChildren(document.createTextNode(result.voice?.conversationMemoryEnabled === false ? 'Recent history will not be sent to Groq.' : 'Recent history helps Buddy continue the conversation.'));
+    if (result.voice?.vadEnabled === false) throw new Error('Local speech detection is disabled in server settings.');
+    byId('voice-setup-status').textContent = 'All three models are listed. If Groq speech is unavailable, Buddy will use this device’s voice.';
+    const usageResponse = await fetch('/api/voice/usage', { signal: AbortSignal.timeout(10000) });
+    if (usageResponse.ok) {
+      const usage = await usageResponse.json();
+      const latencyCalls = usage.sttRequests + usage.llmRequests + usage.ttsRequests;
+      const averageLatency = latencyCalls ? Math.round(usage.latencyMs / latencyCalls) : 0;
+      byId('voice-usage-status').textContent = `${usage.day} UTC · STT ${usage.sttRequests} requests / ${Math.round(usage.audioSeconds)} audio seconds · LLM ${usage.llmRequests} requests / ${usage.inputTokens + usage.outputTokens} tokens · TTS ${usage.ttsRequests} requests / ${usage.ttsCharacters} characters · ${usage.rateLimitErrors} rate-limit errors · ${averageLatency} ms average latency · estimated $${Number(usage.estimatedUsd).toFixed(4)} of $${Number(usage.dailyLimitUsd).toFixed(2)} daily limit.`;
+    } else byId('voice-usage-status').textContent = 'Daily usage counters are not available right now.';
+  } catch (error) {
+    byId('voice-setup-status').textContent = error.message;
+  }
+});
 screenAwakeToggle.addEventListener('change', () => {
   keepScreenAwake = screenAwakeToggle.checked;
   screenAwakeValue.textContent = keepScreenAwake ? 'ON' : 'OFF';

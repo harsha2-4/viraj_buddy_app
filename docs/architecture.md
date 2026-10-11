@@ -1,72 +1,47 @@
-# Phase 1 architecture
+# Architecture
 
-**Historical launcher architecture.** Version 0.2 adds `server/index.mjs`,
-WebRTC voice in `web/js/voice.js`, topic illustrations in `web/js/scenes.js`,
-and an Android `VoiceActivity` WebView restricted to the configured HTTPS origin.
-It requests microphone permission only for voice. See [current voice architecture
-and setup](voice-setup.md). The diagram and constraints below describe only the
-original external ChatGPT launcher, retained for the photo action.
+## Voice application
 
 ```text
-iPhone 1 / iPhone 2                     Fire HD 10
-Safari → installed PWA                  installed native Kotlin APK
-           ↓                                      ↓
-local HTML/CSS/SVG launcher             Activity / native buttons / image
-           ↓                                      ↓
-normal HTTPS navigation                ACTION_VIEW + CATEGORY_BROWSABLE
-           └───────────────────┬──────────────────┘
-                               ↓
-                   configured ChatGPT destination
-                               ↓
-                  adult uses ChatGPT voice / photos
+iPhone Safari/PWA or Fire Android wrapper
+  → web assets and localStorage history
+  → local MediaRecorder segmentation and VAD
+  → same-origin Node API
+  → Groq STT → Groq LLM + exact master prompt → Groq WAV TTS
+  → ordered playback and listening resumes in foreground
 ```
 
-There is no backend, API key, custom login, AI SDK, microphone permission, camera
-permission, analytics, billing integration or Google Play Services dependency.
-ChatGPT authenticates and provides conversations. The launcher neither reads nor
-controls those conversations. An installed ChatGPT app may handle its supported
-HTTPS links depending on the OS defaults; the shell does not force a package.
+`server/index.mjs` serves the `web/` directory and API routes. `server/groq-config.mjs`
+validates fixed model IDs and server settings. The Groq key is used only in the
+backend `Authorization` header. API calls require the configured parent code and
+exact `BUDDY_ORIGIN`; rate and usage counters are in memory.
 
-## One destination setting
+`server/master-prompt.md` is the only conversational instruction source. The
+server reads its complete contents as UTF-8 and places them in the `system`
+message. The recorded SHA-256 in `server/master-prompt.sha256` is checked by the
+tests. Prior turns are bounded user/assistant messages from browser local storage;
+they cannot replace the system prompt.
 
-`web/js/config.js` → `CONFIG.chatgptUrl` is the only editable URL.
-The browser imports it directly. `android/app/build.gradle.kts` reads that literal
-and generates `BuildConfig.CHATGPT_URL`; `AppConfig.kt` accesses it centrally.
-An APK embeds the value at build time. Rebuild/reinstall after a change; changing
-the website cannot update an already installed APK.
+The browser applies supported microphone constraints, captures a short pre-roll,
+detects speech with adaptive RMS energy, and waits for end-of-speech silence.
+Completed utterances are uploaded as their browser-selected MediaRecorder format.
+The mic is disabled during reply generation/playback to prevent feedback. TTS
+responses longer than 200 characters are divided at punctuation/word boundaries
+and played in order. Device/browser suspension can stop foreground microphone use.
 
-Only HTTPS links on `chatgpt.com` or legacy `chat.openai.com` are accepted. Embedded
-credentials, custom ports and unrelated hosts are rejected. The parent dialog
-shows Configured/Not Configured without exposing the destination. A configured
-status indicates URL validity, not verified conversation access or authentication.
+`web/js/animations.js` maps voice states to the existing animated character.
+`web/js/scenes.js` selects local illustrations from conversation text. `history.js`
+stores up to 50 conversations in local storage and shares a maximum of 12 recent
+messages with the API on a new turn. Raw audio is not persisted by the app.
 
-## Web boundaries
+## Launcher and photo path
 
-`app.js` handles controls and parent dialog. `navigation.js` validates destinations.
-`animations.js` owns the replaceable avatar controller. Idle and happy only;
-listening/thinking/talking are reserved names with an idle fallback. The photo
-action is a separate mode in one navigation function, ready for future redesign.
+The PWA and native Kotlin launcher retain the existing ChatGPT photo destination.
+`CONFIG.chatgptUrl` is a public URL setting, not a credential. `CONFIG.voiceAppUrl`
+sets the hosted HTTPS server opened by the Android wrapper. Do not put a Groq key
+or parent code in frontend config.
 
-Relative paths, scoped cache names, and manifest start/scope `./` support a GitHub
-Pages repository subpath. The service worker never caches external requests or
-conversation history. Voice transcripts are saved separately in browser local
-storage on the device, with a bounded excerpt used as context in a later voice
-session. The server does not persist conversation records, photos or audio.
-Browser storage/caching is best-effort: the OS can evict stored data. The initial
-online visit must finish caching first.
-
-## Native boundaries
-
-One `Activity`, native widgets, a scrollable responsive layout and a lightweight
-idle animation. It stops animations and pending handoffs when backgrounded and
-resets on return. System animation settings are respected. Missing or restricted
-browser handlers produce a helpful message. No WebView is used.
-
-Minimum SDK 23 supports Fire OS 6/7/8 devices whose Android APIs meet that minimum;
-Fire OS 5/API 22 is outside this starter's support. Browser support for ChatGPT
-voice on any given Fire device must be checked on that device. SDK compatibility
-alone does not establish browser voice support.
-
-Build versions are pinned: AGP 8.9.2, Gradle 8.11.1, Kotlin 2.1.20,
-compile/target SDK 35, Java 17. See [AGP compatibility](https://developer.android.com/build/releases/agp-8-9-0-release-notes)
-and [Amazon Fire OS 7](https://developer.amazon.com/docs/fire-tablets/fire-os-7.html).
+The service worker caches an exact allowlist of static assets only. It does not
+cache API requests, responses, credentials, audio or conversation transcripts.
+GitHub Pages can publish a static preview, but it cannot host the Node API; use
+one persistent HTTPS origin or a same-origin proxy for the voice feature.

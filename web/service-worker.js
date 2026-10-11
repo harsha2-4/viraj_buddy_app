@@ -1,5 +1,5 @@
 // Increment when releasing changes so existing installations receive a fresh shell.
-const VERSION = 'v7';
+const VERSION = 'v19';
 // Include scope: two deployments on the same github.io origin must not delete each other's caches.
 const PREFIX = `viraj-buddy:${self.registration.scope}:`;
 const CACHE = `${PREFIX}${VERSION}`;
@@ -11,8 +11,11 @@ const SHELL = [
 ].map((path) => new URL(path, self.registration.scope).href);
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
-  // Let a waiting update activate after old launcher tabs close, avoiding mixed versions.
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(SHELL);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {

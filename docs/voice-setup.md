@@ -1,123 +1,122 @@
-# Animated voice Buddy (0.2)
+# Groq voice setup
 
-The web app now keeps the conversation on screen using OpenAI Realtime WebRTC.
-Buddy is an illustrated boy with a fixed smile: his head and arms gesture during
-audio playback, with listening and thinking poses between turns. No lip sync is
-attempted. Transcript topic words select eight bundled SVG scenes (home, space,
-ocean, garden, animals, dinosaurs, music, counting). Pictures animate while Buddy
-speaks and respect reduced motion. They are illustrative topic matches, not
-generated images or exact depictions of every sentence. Captions appear as the
-response arrives; topic changes may slightly precede the corresponding audio.
+The Node server provides three separate Groq calls. The browser never receives
+the Groq API key.
 
-## Run locally
+| Purpose | Model | Endpoint |
+| --- | --- | --- |
+| STT | `whisper-large-v3-turbo` | `POST /audio/transcriptions` |
+| LLM | `openai/gpt-oss-20b` | `POST /chat/completions` |
+| TTS | `canopylabs/orpheus-v1-english`, voice `troy`, WAV | `POST /audio/speech` |
 
-Use Node 22.9 or newer. There are no npm dependencies.
+All upstream requests use `https://api.groq.com/openai/v1`. See the [Groq speech
+recognition docs](https://console.groq.com/docs/speech-to-text), [chat API
+reference](https://console.groq.com/docs/api-reference), [Orpheus TTS
+docs](https://console.groq.com/docs/text-to-speech/orpheus), and [models
+API](https://console.groq.com/docs/models).
 
-1. Copy `.env.example` to `.env` in the repository root.
-2. Set `OPENAI_API_KEY` there.
-3. Run `npm start`, then open `http://localhost:8080`.
-4. Choose **Talk to Buddy** and allow microphone access. Use **Mute microphone** or
-   **End conversation** at any time.
+## Local start
 
-Never enter your API key in the app or commit it. Only the server uses it.
-The voice endpoint is intentionally available without a family code. Anyone who
-can reach the public app can start a session. The Origin check rejects ordinary
-cross-site browser requests, but is not authentication. The server limits
-connection attempts to eight per minute per source address; this is not a billing
-cap. Set the lowest available API usage budget and billing alerts, and verify
-whether your budget blocks requests or only sends notifications. Audio goes
-directly to OpenAI; the server exchanges connection offers and does not record
-audio or transcripts. Voice transcripts are saved in the browser's local storage
-on that device, not on the server. Parents can review and clear them in
-**Parents → Conversation history**. The browser retains up to 50 conversations.
-At the start of a later voice session, a bounded excerpt of recent history is sent
-to OpenAI for conversational context. The app does not access the separate
-ChatGPT project's history, and the photo/ChatGPT flow remains independent.
-API usage requires a funded API account and is separate from a ChatGPT subscription.
+Node.js 22.9 or newer is required. No package install is needed.
 
-## Buddy's master prompt and history
+```powershell
+Copy-Item .env.example .env
+# Edit .env and set GROQ_API_KEY.
+npm start
+```
 
-Edit `server/master-prompt.md` to change Buddy's consistent voice behavior and
-safety guidance. The server reads this Markdown file when each new voice session
-starts, so edits apply to new sessions without a code change. It is sent as the
-Realtime session instruction; it is separate from the short welcome instruction
-used to begin each session. The prompt is guidance, not a substitute for adult
-supervision or product safety controls.
+Open `http://localhost:8080` and tap **Talk to Buddy** to start; no server access
+code is required. Voice requires microphone permission. In **Parents**, **Check
+voice setup** checks the account's model list. Use **Mute
+microphone** or **End conversation** to stop audio capture.
+If Groq rejects an Orpheus speech request (including when the organization has
+not accepted its model terms), Buddy reads the reply using the device's built-in
+speech synthesis instead.
 
-The voice output defaults to OpenAI Realtime's `ash` voice, a masculine-sounding
-option; set `OPENAI_REALTIME_VOICE` in the server environment to another
-supported Realtime voice if desired. Realtime voice choices are separate from
-the voice selected in the ChatGPT app, so the API cannot automatically mirror an
-account's ChatGPT voice. Sillyface opens each session with a fresh topic and
-uses the recent conversation excerpt, when available, to avoid repeating the
-most recent theme.
+## Environment
 
-Voice activity detection uses a higher speech threshold and a longer silence
-window so incidental sounds are less likely to start a turn. Barge-in is disabled,
-and Sillyface's session instructions prioritize Viraj's words when voices
-overlap. The defaults request browser echo cancellation, noise suppression, and
-automatic gain control when the browser reports support. Realtime noise
-reduction defaults to `near_field`; `far_field` is available for more distant
-tablet microphones. VAD configuration cannot be lowered below a 0.5 threshold,
-300 ms prefix padding, or 1000 ms silence window, preserving time for a child's
-soft or paused speech. These features reduce noise; they do not identify who is
-speaking.
+Required:
 
-The server defaults are `OPENAI_REALTIME_NOISE_REDUCTION=near_field`,
-`OPENAI_REALTIME_VAD_THRESHOLD=0.7`,
-`OPENAI_REALTIME_VAD_PREFIX_PADDING_MS=300`, and
-`OPENAI_REALTIME_VAD_SILENCE_DURATION_MS=1000`. Use `far_field` only when the
-tablet microphone is farther away. The threshold can be tuned from 0.5 to 0.8;
-prefix padding and silence are kept at or above 300 ms and 1000 ms so a child's
-pauses are not prematurely treated as a completed turn.
+- `GROQ_API_KEY`: server-side Groq secret.
+- `BUDDY_ORIGIN`: exact origin of the app, with no trailing slash.
 
-The Parents settings include **Keep Screen Awake During Conversation**, on by
-default. When available in a secure browser context, the app requests the Screen
-Wake Lock API while voice is active, keeps it through silence, and requests it
-again when the app becomes visible. End the voice session or turn the setting
-off to release it. Browser, operating-system, battery-saver, and device policy
-can deny or release wake locks; the setting cannot override those restrictions.
-If unavailable, use iPhone/iPad **Settings → Display & Brightness → Auto-Lock**
-or the Fire tablet's **Display → Sleep** setting. Browser support differs by
-device and browser version; verify on the target device.
+See `.env.example` for model IDs, enable flags, recording size/time limits,
+browser audio constraints, timeout, daily estimated spend guard and configurable
+price assumptions. Model IDs and base URL are validated; the runtime refuses
+legacy-model overrides. Keep production values in the host's secret manager.
 
-User transcripts are captured using Realtime input transcription and stored
-locally alongside Buddy's completed reply transcripts. Audio is not saved by the
-app. Browser storage can be removed by clearing site data, uninstalling the PWA,
-or browser/OS storage cleanup. Use **Clear conversation history** in Parents
-settings to delete the saved records yourself.
+The Groq usage list is available in Parents settings. `GET /api/voice/models`
+checks model access; `GET /api/voice/usage` reports in-memory daily
+counts and the local cost estimate. The estimate uses configurable STT, LLM and
+TTS rates. Orpheus English defaults to $22 per million characters. The estimate
+resets at UTC midnight and on server restart; configure provider-side
+spend limits as well.
 
-## Host for phones and Fire tablets
+## Prompt, history and privacy
 
-Run the Node server behind HTTPS on a host that supports a persistent Node process.
-Set `HOST=0.0.0.0`, the host's `PORT`, and `BUDDY_ORIGIN` to the exact HTTPS origin
-(no trailing slash). Serve the app and `/api/session` together at the origin root.
-Store the API key using the host's environment settings. Static GitHub Pages
-hosting alone cannot run voice. The existing Pages workflow only deploys the UI.
+`server/master-prompt.md` remains the only authority for personality and safety.
+The backend loads the original UTF-8 bytes without trimming and sends the entire
+content in the LLM `system` message on every reply. `server/master-prompt.sha256`
+contains the recorded original hash. `npm test` checks its byte-for-byte
+integrity. Session history is stored in this device's local storage; at most 12
+recent messages are sent with a turn. The server does not persist audio,
+transcripts or replies. The Groq provider receives the submitted audio and text.
 
-For Android, set `voiceAppUrl` in `web/js/config.js` to this hosted HTTPS URL and
-rebuild the APK. **Talk to Buddy** opens the hosted experience inside a restricted
-WebView; only the configured origin can request microphone permission. External
-links open outside the voice screen. Use an updated Android System WebView with
-WebRTC support; test on the actual Fire device before distributing. iPhone uses
-the same hosted app in Safari or as a Home Screen PWA.
+The voice API has no app access-code gate. API origin validation, a per-IP
+in-memory rate limit, an audio upload cap and the estimated daily limit provide
+basic controls; keep the server private or deploy behind HTTPS with host-level
+access and rate controls before public exposure. Avoid unnecessary personal data.
+A parent should remain present during use.
 
-Leaving or backgrounding the voice screen ends the media session. Sessions in the
-UI stop after ten minutes. The endpoint is public and the backend limits connection
-attempts to eight per minute per source address; this is not authentication or a
-hard billing limit. Configure API usage budgets and alerts before public deployment.
-Behind a proxy, the per-address limit is shared unless
-the host preserves source addresses; forwarded headers are deliberately untrusted.
+## Browser behavior
 
-## Validation
+After Talk is tapped, the browser requests microphone permission, applies the
+supported echo cancellation, noise suppression and automatic gain settings, then
+uses a local adaptive-volume VAD. It keeps a short pre-roll, waits for the
+configured end-of-speech pause, rejects very short segments, and caps each
+recording. It detects MediaRecorder formats at runtime and preserves the chosen
+MIME type and extension for Safari/WebKit and Chromium. Silence never calls STT.
 
-`npm test` exercises scene selection, playback state handling, origin checks,
-server failures, static-file boundaries, and offline caching. `python scripts/validate.py`
-checks asset references and Android resources. Live calls require your credentials,
-HTTPS, and microphone access; mocked tests cannot verify voice quality or device support.
-With Playwright and Chromium available, run `node scripts/voice-browser.cjs` for
-responsive screenshots and mocked browser call lifecycle checks. Optional environment
-overrides: `BUDDY_PLAYWRIGHT_MODULE` (module path), `BUDDY_CHROME_PATH` (browser executable).
+The browser pauses its microphone while Buddy's WAV or built-in speech plays, then listens
+again while the foreground page remains active. Orpheus input is limited to 200
+characters; longer replies are split at punctuation and word boundaries, then
+synthesized and played sequentially. Backgrounded or locked devices may suspend
+microphone access; continuous listening is not supported in those states.
 
-Integration follows [OpenAI WebRTC documentation](https://developers.openai.com/api/docs/guides/voice-webrtc?voice-api=realtime)
-and [Realtime conversation events](https://developers.openai.com/api/docs/guides/realtime-conversations).
+## Host deployment
+
+Run the Node server as a persistent process behind HTTPS. It serves both `web/`
+and `/api/voice/*` from one origin. Set `HOST=0.0.0.0`, the host `PORT`, exact
+`BUDDY_ORIGIN` and `GROQ_API_KEY` in the host's environment.
+Static GitHub Pages alone cannot run the API. If a platform requires separate
+static hosting, configure a same-origin reverse proxy; the client routes are
+relative and do not send API keys. Set `voiceAppUrl` in `web/js/config.js` for the
+Android wrapper, then rebuild the APK.
+
+## Troubleshooting and rollback
+
+- **Missing key / service unconfigured:** set `GROQ_API_KEY` in the server environment and restart.
+- **A model is unavailable:** check model permissions and availability for the Groq project; do not silently change the pinned model.
+- **Device voice is being used:** Groq Orpheus is unavailable, often because its organization terms have not been accepted. Buddy continues using built-in browser speech; a Groq organization admin can accept the `canopylabs/orpheus-v1-english` terms in the Groq Console to restore Orpheus voice.
+- **429:** respect Groq limits, wait for the provider's retry period and check the configured account spend/rate limits.
+- **No microphone:** use HTTPS or localhost, grant site microphone permission and keep the app visible.
+- **No speech detected:** check device input level and tune `VOICE_END_SILENCE_MS` or local VAD settings; short answers remain valid if detected.
+- **No spoken reply:** check browser speech support and audio output. If Groq TTS is unavailable, Buddy uses the browser's built-in speech synthesis.
+- **Old PWA assets:** the shell cache version is incremented on release; reopen online to receive it.
+
+Rollback by deploying the last known server and web release together, then set
+the prior APK if the native launcher changed. Never restore an OpenAI Realtime
+credential or active legacy route as a silent fallback.
+
+## Checks
+
+```powershell
+npm test
+python scripts/validate.py
+npm start
+```
+
+Tests mock Groq and do not make billable calls. The repository does not perform
+physical-device verification. Test iPhone Safari, installed iPhone PWA and the
+actual Fire HD 10 browser/WebView for microphone permissions, codec negotiation,
+WAV playback, page suspension and version update behavior.

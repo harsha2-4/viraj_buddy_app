@@ -434,6 +434,21 @@ dialog::backdrop {
   font-size: 17px;
 }
 
+#voice-access-code {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid #c4d3c2;
+  border-radius: 12px;
+  color: var(--ink);
+  background: #fffdf7;
+  font: inherit;
+}
+
+#voice-access-status { font-size: 12px; }
+
 .screen-awake-setting {
   display: flex;
   align-items: center;

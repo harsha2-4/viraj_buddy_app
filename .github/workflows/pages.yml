@@ -1,4 +1,5 @@
-name: Deploy launcher to GitHub Pages
+name: Deploy static preview to GitHub Pages
+# Static preview only; GitHub Pages cannot host the Node voice API.
 # Deliberately manual: uploading code to a private repository does not publish a site.
 on:
   workflow_dispatch:

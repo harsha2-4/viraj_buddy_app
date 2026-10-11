@@ -7,8 +7,9 @@
 3. Use JDK 17 for Gradle (Settings → Build Tools → Gradle → Gradle JDK). Install
    Android SDK Platform 35 and Build Tools 35.0.0 using SDK Manager, reviewing and
    accepting the SDK licenses yourself. Let Gradle sync finish; first sync needs internet.
-4. In `web/js/config.js`, replace `chatgptUrl` with your own ChatGPT project/conversation
-   URL. Android automatically includes this value when it builds.
+4. In `web/js/config.js`, set `voiceAppUrl` to the hosted HTTPS voice app URL.
+   Android automatically includes this value when it builds. `chatgptUrl` remains
+   only the separate photo destination.
 5. Select the debug build variant, then use **Build → Build App Bundle(s) / APK(s)
    → Build APK(s)** (menu names vary by Studio version). Or in PowerShell:
 
@@ -38,10 +39,9 @@ Studio's generated `local.properties` (ignored by Git).
    unknown-source permission again if it is no longer needed.
 5. Launch **Viraj AI Buddy**. Move its icon to a prominent place on the Home screen
    using the tablet's normal icon arrangement controls.
-6. As the parent, press **Talk to Buddy**. The system opens the available HTTPS
-   handler, normally the installed browser. Sign in to your existing ChatGPT account
-   there and verify the destination. Prefer doing this setup before the activity.
-7. Start Voice or attach a photo in ChatGPT if those features are available there.
+6. Tap **Talk to Buddy** and allow microphone access; no server access code is
+   required. Keep the app in the foreground during the activity.
+7. Use **Show Buddy Something** to open the separate configured ChatGPT destination.
    Use Back/the launcher icon to return to Buddy.
 
 No Google Play Services or Google Play installation is required. The launcher is
@@ -56,11 +56,12 @@ For a preschooler, conduct the actual ChatGPT interaction as an adult. See
 
 - Browser support for ChatGPT (especially Voice) must be verified on your exact
   Fire model/browser. An installable launcher does not guarantee Voice support.
-- **Not Configured:** set the URL, rebuild, and reinstall the APK. Website changes
+- **Voice setup fails:** check the Groq key, model access and HTTPS host.
+- **Not Configured:** set `voiceAppUrl`, rebuild, and reinstall the APK. Website changes
   alone do not update a previously built APK.
 - **No browser:** install/enable a suitable browser using the tablet's supported
   options. Buddy handles missing handlers with a message.
-- **No internet:** the native screen still works; the browser needs a connection.
+- **No internet:** the native screen still works; voice needs the hosted server.
 - **Install rejected:** check minimum OS, free space and source permissions. For an
   update, use the same signing key; builds from different machines/CI can have
   different debug keys. Uninstall the old test app first if signatures conflict.

@@ -67,6 +67,7 @@ async function workerHarness() {
   const keys = [prefix + 'v0', prefix + 'v2', 'viraj-buddy:https://example.test/another/:v0', 'other-app'];
   let offline = false;
   let claimed = false;
+  let skippedWaiting = false;
   const cache = {
     async addAll(urls) { urls.forEach(url => stored.set(url, new Response('cached ' + url))); },
     async match(request) { return stored.get(typeof request === 'string' ? request : request.url)?.clone(); },
@@ -75,6 +76,7 @@ async function workerHarness() {
   vm.runInNewContext(source, {
     URL, Response,
     self: { registration: { scope }, location: new URL(scope),
+      async skipWaiting() { skippedWaiting = true; },
       clients: { async claim() { claimed = true; } },
       addEventListener(name, listener) { listeners[name] = listener; } },
     caches: { async open() { return cache; }, async keys() { return keys; }, async delete(key) { deleted.push(key); } },
@@ -95,7 +97,7 @@ async function workerHarness() {
     return response;
   }
   return { scope, prefix, stored, deleted, requests, lifecycle, get,
-    setOffline() { offline = true; }, get claimed() { return claimed; } };
+    setOffline() { offline = true; }, get claimed() { return claimed; }, get skippedWaiting() { return skippedWaiting; } };
 }
 
 test('worker precaches only own repository path and cleans only its own old cache', async () => {
@@ -108,6 +110,7 @@ test('worker precaches only own repository path and cleans only its own old cach
   await worker.lifecycle('activate');
   assert.deepEqual(worker.deleted, [worker.prefix + 'v0', worker.prefix + 'v2']);
   assert.equal(worker.claimed, true);
+  assert.equal(worker.skippedWaiting, true);
 });
 
 test('worker ignores ChatGPT, unknown paths, other apps, query URLs and POST', async () => {

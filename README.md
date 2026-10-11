@@ -1,243 +1,127 @@
 # Viraj AI Buddy
 
-**Version 0.2 adds an animated boy and in-app AI voice conversations**, with
-gestures during speech and illustrated scenes that follow conversation topics.
-Voice behavior is in `server/master-prompt.md`; voice transcripts are saved
-locally in the browser and can inform later sessions. See [voice setup](docs/voice-setup.md)
-for the Node backend, API credentials, history behavior, HTTPS hosting, and
-Android configuration. The original Phase 1 instructions below describe the
-retained external ChatGPT/photo launcher, not the new voice mode.
+Viraj AI Buddy is a voice conversation PWA with an animated character, topic
+illustrations, on-device conversation history, parent settings, and a separate
+ChatGPT photo launcher. The voice backend is a small Node.js server. Browser
+audio is segmented locally and sent to Groq only after speech is detected.
 
-The Phase 1 shell application for Viraj AI Buddy: a calm, friendly launchpad for
-adult-led adventures, using an existing ChatGPT destination. No OpenAI API,
-Realtime API, paid backend, or custom AI integration is used.
-
-## Goal
-
-One simple home screen for two iPhones (Home Screen PWA) and an Amazon Fire HD 10
-(native Android APK): a friendly animated Buddy, **Hi Viraj!**, **Talk to Buddy**,
-and **Show Buddy Something**. Both buttons open the configured ChatGPT destination.
-
-Because Viraj is four, this is an adult-led activity launcher. ChatGPT is not
-intended for under-13s; an adult must conduct the actual ChatGPT interaction in
-an educational activity with a child under 13. See [OpenAI's age guidance](https://help.openai.com/en/articles/8313401-is-chatgpt-safe-for-all-ages).
-
-## Architecture
+## Voice architecture
 
 ```text
-iPhone → Home Screen PWA → launcher → normal HTTPS navigation → ChatGPT
-Fire HD 10 → native Kotlin APK → launcher → ACTION_VIEW → browser → ChatGPT
+Browser microphone → local VAD and MediaRecorder → Node API
+  → Groq Whisper STT → Groq chat with server/master-prompt.md
+  → Groq Orpheus WAV TTS (device speech fallback) → listen again
 ```
 
-ChatGPT handles authentication, conversations, voice and images. The launcher has
-no access to them. No WebView, own login UI, ads, analytics, recording or API keys.
-See [architecture details](docs/architecture.md).
+The backend uses these fixed model IDs:
 
-## Repository Structure
+| Service | Groq model | Endpoint |
+| --- | --- | --- |
+| Speech recognition | `whisper-large-v3-turbo` | `/audio/transcriptions` |
+| Conversation | `openai/gpt-oss-20b` | `/chat/completions` |
+| Speech | `canopylabs/orpheus-v1-english`, voice `troy` | `/audio/speech` |
 
-```text
-viraj-ai-buddy/
-├── web/                         # Deploy this directory, not the repository root
-│   ├── index.html
-│   ├── manifest.json
-│   ├── service-worker.js
-│   ├── css/styles.css
-│   ├── js/{app,config,animations,navigation}.js
-│   ├── assets/
-│   │   ├── icons/{icon-192,icon-512,apple-touch-icon}.png
-│   │   ├── images/placeholder-avatar.svg
-│   │   └── sounds/.gitkeep
-│   └── README.md
-├── android/
-│   ├── app/
-│   │   ├── build.gradle.kts
-│   │   └── src/main/
-│   │       ├── AndroidManifest.xml
-│   │       ├── java/com/viraj/aibuddy/{MainActivity,AppConfig}.kt
-│   │       └── res/
-│   │           ├── drawable/buddy.png
-│   │           ├── mipmap-{mdpi,hdpi,xhdpi,xxhdpi}/ic_launcher.png
-│   │           ├── values/{colors,strings,themes}.xml
-│   │           └── xml/network_security_config.xml
-│   ├── gradle/wrapper/{gradle-wrapper.jar,gradle-wrapper.properties}
-│   ├── gradlew
-│   ├── gradlew.bat
-│   ├── build.gradle.kts
-│   ├── settings.gradle.kts
-│   └── gradle.properties
-├── docs/
-│   ├── architecture.md
-│   ├── iphone-installation.md
-│   ├── fire-tablet-installation.md
-│   ├── roadmap.md
-│   └── validation.md
-├── scripts/{validate.py,web.test.mjs}
-├── .github/workflows/{pages,validate}.yml
-├── .gitattributes
-├── .gitignore
-├── LICENSE
-└── README.md
-```
+The API key stays on the server. Voice starts directly from **Talk to Buddy**;
+there is no app access-code prompt. API routes check the exact app origin and
+have an in-memory per-IP rate limit. Keep the server private or behind HTTPS and
+configure a host-level spend limit as well as the local estimated daily guard.
 
-The local folder can remain named `viraj_buddy_app`; name the remote repository
-`viraj-ai-buddy`. There is no extra nested repository folder.
+## Master prompt integrity
 
-## Running the Web App Locally
+`server/master-prompt.md` is the authoritative personality and safety prompt.
+The server reads the file as UTF-8 without trimming it and sends those exact
+contents as the LLM system message. Its original SHA-256 is recorded in
+`server/master-prompt.sha256`; `npm test` fails if any prompt byte changes. Do not
+edit the prompt or its hash without an explicitly authorized prompt update.
 
-From the repository root:
+## Setup and run
+
+Use Node.js 22.9 or newer. The repository uses Node's built-in HTTP server and
+`fetch`; there are no installed npm dependencies.
 
 ```powershell
-cd web
-python -m http.server 8080
+Copy-Item .env.example .env
+# Edit .env: set GROQ_API_KEY.
+npm start
 ```
 
-Open **http://localhost:8080**. Use Ctrl+C to stop the server. No Node build system
-or package installation is needed. Do not double-click `index.html`; ES modules
-and service workers need HTTP(S). An unset destination opens parent setup help.
-
-## Deploying to GitHub Pages
-
-1. Push to your private repository using the commands below.
-2. Check plan eligibility: Pages from a private personal repository requires an
-   eligible paid GitHub plan, such as Pro; GitHub Free supports Pages from public
-   repositories. Do not change repository visibility just to enable Pages without
-   considering what will be exposed. See [GitHub Pages availability](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages).
-3. Open repository **Settings → Pages → Build and deployment → Source** and choose
-   **GitHub Actions**.
-4. Open **Actions → Deploy launcher to GitHub Pages → Run workflow**. This manual
-   workflow uploads only `web/` and publishes it to Pages. Pushing alone does not
-   publish the site. Do not choose branch/root publishing: it would serve the wrong folder.
-5. Visit the URL shown by the workflow, normally
-   `https://USERNAME.github.io/viraj-ai-buddy/`.
-6. Rerun the deployment workflow after configuration or content changes. Increment
-   `VERSION` in `web/service-worker.js` when changing shell assets.
-
-Private repository visibility does **not** ordinarily make the Pages website
-private. The published files, child name and configured URL are inspectable by
-site visitors. The destination is still protected by ChatGPT account access; never
-put a share token, password or other secret in the configuration. If private-repo
-Pages is unavailable, keep the repo private and use an HTTPS static host you
-control instead. Local development does not require any hosting plan.
-
-## Installing on iPhone
-
-Open the HTTPS launcher in Safari → **Share → Add to Home Screen → Add**. Repeat
-on the second iPhone. The parent signs in to ChatGPT in the browser/app that opens.
-See [the parent-friendly iPhone guide](docs/iphone-installation.md).
-
-## Building the Fire HD 10 APK
-
-Open `android/` in Android Studio, use JDK 17, install SDK Platform 35 and Build
-Tools 35.0.0, and let Gradle sync. The complete repository must stay together
-because Android reads the shared URL in `web/js/config.js`.
-
-From the repository root in PowerShell:
-
-```powershell
-cd android
-.\gradlew.bat assembleDebug lintDebug
-```
-
-APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
-Transfer it to the tablet and temporarily allow installation from the source
-used to open it. See [the Fire installation guide](docs/fire-tablet-installation.md).
-
-Minimum SDK is 23; no Google Play Services dependency. The included validation
-workflow also builds a debug APK and uploads it as an Actions artifact after a
-successful run. CI artifacts are test builds; signing may differ from local builds.
+Open `http://localhost:8080`, choose **Talk to Buddy**, and allow microphone
+access. In **Parents**, **Check voice setup** calls Groq's models API to confirm
+the configured account exposes all three model IDs. Local development works on
+localhost; phones and PWAs need the hosted service over HTTPS.
+If Groq's Orpheus TTS is unavailable (for example, while its terms are pending),
+Buddy uses the device's built-in speech synthesis for spoken replies.
 
 ## Configuration
 
-Change exactly **one URL value** in **`web/js/config.js`**:
+`.env.example` documents the full server configuration. The required production
+secret is `GROQ_API_KEY`. Model settings are pinned to the required IDs; attempts
+to override them with a legacy model are rejected.
+`BUDDY_ORIGIN` must match the exact origin serving the app. Keep actual secrets in
+the hosting provider's secret manager and never commit `.env`.
 
-```js
-chatgptUrl: "REPLACE_WITH_CHATGPT_PROJECT_URL",
-```
+Microphone VAD and browser constraints can be tuned with `VOICE_*` settings.
+`GROQ_DAILY_SPEND_LIMIT_USD` is an in-memory server-side estimate guard that resets
+at UTC midnight; it is not a billing meter or a substitute for Groq account
+limits. Unit rates are configurable and estimates can differ from provider
+invoices. Authenticated `GET /api/voice/usage` reports daily request counts,
+tokens, audio seconds, latency and the estimated cost.
 
-Replace the placeholder with the HTTPS URL copied from your own ChatGPT project
-or conversation, keeping the double quotes and comma. Accepted hosts are
-`chatgpt.com` and legacy `chat.openai.com`. Use a normal authenticated destination;
-you do not need to create a publicly shared conversation.
+The Orpheus endpoint accepts at most 200 characters per request. The browser
+splits longer replies at sentence and word boundaries, requests WAV chunks in
+order, and plays them sequentially. If a Groq speech request fails, it reads the
+remaining reply aloud using the browser's built-in speech synthesis; no alternate
+paid TTS provider is configured.
 
-The PWA imports it directly. Android's Gradle build copies it into generated
-`BuildConfig.CHATGPT_URL`, accessed through `AppConfig.kt`. **Redeploy the web app
-and rebuild/reinstall the APK after changing it.** Do not edit generated files.
-
-Optional web settings live alongside the URL: name, camera-button visibility,
-animation and debugging flags. The native visibility/animation flags live in
-`AppConfig.kt`; native display strings live in `strings.xml`.
-
-## Security
-
-- No OpenAI API key is required. ChatGPT Plus remains managed by ChatGPT.
-- Never commit signing keys, passwords, authentication cookies, access tokens or
-  API keys. The `.gitignore` covers common secret and build files, but still review
-  staged changes before committing.
-- Settings shows only Configured/Not Configured. It is informational, not a parent
-  authentication system, URL access check or child-safety boundary.
-- Only HTTPS ChatGPT destinations are accepted. The launcher requests no camera
-  or microphone permission. Those permissions belong to ChatGPT/browser use.
-- Only this launcher's static assets are cached. No ChatGPT content is cached by it.
-- Use an adult's account under that adult's control; this app does not create a
-  child account or change ChatGPT eligibility or controls.
-
-## Current Limitations
-
-The launcher can open ChatGPT, but starting ChatGPT Voice Mode automatically is
-dependent on ChatGPT-supported navigation/deep-link capabilities. The app should
-not use unsupported hacks to simulate or bypass that behavior.
-
-This version uses normal HTTPS navigation only. The adult may need to tap Voice
-or attach a photo inside ChatGPT. Feature availability depends on the device,
-browser, account and ChatGPT. In particular, Fire browser Voice support needs
-real-device verification. Authentication may be separate between iOS contexts.
-
-The avatar is decorative, with no lip sync or live listening state. There is no
-direct photo upload, conversation state or device synchronization. Only the local
-launcher works offline. An APK must be rebuilt for a new destination URL.
-
-See [validation results and device checklist](docs/validation.md) for what was
-actually tested and what still requires an Android toolchain or physical device.
-
-## Phase 2 Roadmap
-
-Future documentation covers Realtime API, speech, camera, parent controls,
-activity modes and richer avatars. None is implemented or billed in Phase 1.
-See [the Phase 2/3 roadmap](docs/roadmap.md).
-
-## Validate the Starter
-
-Optional developer checks (Python 3 and Node 22+, no npm install):
+## Test and validate
 
 ```powershell
+npm test
 python scripts/validate.py
-node --test scripts/web.test.mjs
 ```
 
-Run the Android build/lint command above with the installed SDK/JDK. Also test
-installation, browser authentication and Voice availability on each physical device.
+`npm test` uses mocked Groq responses; it makes no billable API calls. Check
+availability with **Parents → Check voice setup** or call authenticated
+`GET /api/voice/models`. There is no production build step. Run the backend with
+`npm start` to verify server initialization and frontend delivery. The automated
+suite exercises API routing and prompt integrity, but physical microphone, audio
+playback and voice quality still need iPhone Safari, iPhone Home Screen PWA, and
+Fire HD 10 browser/WebView testing.
 
-## Create the Private GitHub Repository
+## Deployment
 
-From the local repository root:
+GitHub Pages hosts only static files and cannot provide the voice API. Deploy the
+Node process on an HTTPS host, serve the web app and `/api/voice/*` at one origin,
+and set these host values:
 
-```powershell
-git init
-git add .
-git commit -m "Initial Viraj AI Buddy shell"
+```text
+HOST=0.0.0.0
+PORT=<host-provided port>
+BUDDY_ORIGIN=https://your-voice-host.example
+GROQ_API_KEY=<host secret>
 ```
 
-If Git asks for your identity, set your own `user.name` and `user.email` first.
-On GitHub, select **New repository**, enter **viraj-ai-buddy**, choose **Private**,
-and leave README, license and .gitignore initialization unchecked (they exist locally).
-Click **Create repository**, then run, replacing `USERNAME` with your GitHub name:
+The voice API has no app access-code gate; keep the server private or add
+host-level access controls before exposing it publicly. Keep the static app and
+API same-origin, or configure a same-origin reverse proxy.
+For Android's native launcher, set `voiceAppUrl` in `web/js/config.js` to the
+HTTPS server URL and rebuild the APK. For iPhone, open that URL in Safari and use
+**Add to Home Screen**. Existing PWA icons should receive the updated service
+worker shell without removing and reinstalling the shortcut. See
+[voice setup](docs/voice-setup.md), [iPhone installation](docs/iphone-installation.md),
+and [Fire tablet installation](docs/fire-tablet-installation.md).
 
-```powershell
-git branch -M main
-git remote add origin https://github.com/USERNAME/viraj-ai-buddy.git
-git push -u origin main
-```
+## Privacy and limitations
 
-Use Git's normal credential manager/browser sign-in; do not put a token in the
-remote URL. If `origin` already exists, inspect `git remote -v` before changing it.
-These instructions do not themselves create, commit, push, or publish anything.
+The app does not save raw audio on the server. Transcripts and replies are saved
+in browser local storage on that device and sent as bounded recent history to
+Groq for context. Avoid collecting sensitive information; a parent should stay
+with the child. Rate and spend counters are in memory and reset when the server
+restarts. HTTPS, host-level authentication/rate controls and provider billing
+limits are needed for a public deployment. Browser microphone access cannot
+continue while an iPhone is locked or the browser suspends the page. No actual
+iPhone or Fire device was tested by the repository checks.
+
+The separate photo action still opens the configured ChatGPT destination. It is
+not part of the Groq voice session. Change that destination only in
+`web/js/config.js`; never put a token or API key there.

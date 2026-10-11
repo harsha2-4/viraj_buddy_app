@@ -1,73 +1,64 @@
 export const audioConfig = {
-  microphone: {
-    echoCancellation: true,
-    noiseSuppression: true,
-    autoGainControl: true,
-    channelCount: 1
-  },
-  noiseReduction: 'near_field',
+  microphone: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
   vad: {
-    type: 'server_vad',
-    threshold: 0.7,
-    prefixPaddingMs: 300,
-    silenceDurationMs: 1000,
-    createResponse: true,
-    interruptResponse: false
+    absoluteThreshold: 0.012,
+    noiseMultiplier: 2.5,
+    startFrames: 2,
+    endSilenceMs: 1000,
+    maxUtteranceMs: 15000
   },
-  debug: {
-    enabled: false
-  }
+  minSpeechMs: 200,
+  debug: { enabled: false }
 };
 
-export function buildMicrophoneConstraints(overrides = {}) {
-  const defaults = { ...audioConfig.microphone, ...overrides };
-  const getSupportedConstraints = globalThis.navigator?.mediaDevices?.getSupportedConstraints;
-  const supported = typeof getSupportedConstraints === 'function' ? getSupportedConstraints.call(globalThis.navigator.mediaDevices) : null;
-  const audio = {};
-
-  for (const name of ['echoCancellation', 'noiseSuppression', 'autoGainControl', 'channelCount']) {
-    if (defaults[name] !== undefined && (!supported || supported[name] === true)) {
-      audio[name] = defaults[name];
-    }
-  }
-  return { audio };
+export function chooseRecordingType(MediaRecorderImpl = globalThis.MediaRecorder) {
+  if (!MediaRecorderImpl?.isTypeSupported) return '';
+  return ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/ogg;codecs=opus']
+    .find(type => MediaRecorderImpl.isTypeSupported(type)) || '';
 }
 
-function boundedNumber(value, fallback, minimum) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.max(number, minimum) : fallback;
-}
-
-export function buildRealtimeSessionConfig({
-  instructions,
-  model,
-  voice,
-  noiseReduction = audioConfig.noiseReduction,
-  vad = audioConfig.vad
-} = {}) {
-  if (!['near_field', 'far_field'].includes(noiseReduction)) {
-    throw new RangeError('Realtime noise reduction must be near_field or far_field.');
-  }
-
-  return {
-    type: 'realtime',
-    model,
-    instructions,
-    max_output_tokens: 400,
-    audio: {
-      input: {
-        noise_reduction: { type: noiseReduction },
-        transcription: { model: 'gpt-4o-mini-transcribe' },
-        turn_detection: {
-          type: 'server_vad',
-          threshold: Math.min(boundedNumber(vad.threshold, audioConfig.vad.threshold, 0.5), 0.8),
-          prefix_padding_ms: boundedNumber(vad.prefixPaddingMs, audioConfig.vad.prefixPaddingMs, 300),
-          silence_duration_ms: boundedNumber(vad.silenceDurationMs, audioConfig.vad.silenceDurationMs, 1000),
-          create_response: Boolean(vad.createResponse ?? true),
-          interrupt_response: Boolean(vad.interruptResponse ?? false)
+export function splitSpeechText(value, limit = 200) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  const sentences = text.match(/[^.!?。！？]+[.!?。！？]?/gu) || [text];
+  const chunks = [];
+  let current = '';
+  const append = part => {
+    const words = part.trim().split(/\s+/u);
+    for (const word of words) {
+      if (Array.from(word).length > limit) {
+        if (current) chunks.push(current.trim());
+        current = '';
+        let segment = '';
+        for (const character of Array.from(word)) {
+          if (Array.from(segment).length >= limit) { chunks.push(segment); segment = ''; }
+          segment += character;
         }
-      },
-      output: { voice: voice || 'ash' }
+        current = segment;
+      } else if (current && Array.from(`${current} ${word}`).length > limit) {
+        chunks.push(current.trim()); current = word;
+      } else current += `${current ? ' ' : ''}${word}`;
     }
   };
+  for (const sentence of sentences) {
+    if (Array.from(sentence.trim()).length > limit) {
+      append(sentence);
+      if (current) { chunks.push(current.trim()); current = ''; }
+    } else if (current && Array.from(`${current} ${sentence.trim()}`).length > limit) {
+      chunks.push(current.trim()); current = sentence.trim();
+    } else current += `${current ? ' ' : ''}${sentence.trim()}`;
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks.filter(Boolean);
+}
+
+export function splitConversationalSpeech(value, limit = 200) {
+  const text = String(value || '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/gu, '$1')
+    .replace(/[*_~`#]/gu, '')
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/[—–]/gu, ', ')
+    .replace(/\s+/gu, ' ')
+    .trim();
+  return splitSpeechText(text, limit);
 }

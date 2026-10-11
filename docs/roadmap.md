@@ -1,37 +1,20 @@
 # Roadmap
 
-## Phase 1 — this repository
+## Current implementation
 
-Lightweight PWA + native Fire launcher, shared destination setting, placeholder
-avatar, parent information dialog, installation documentation. No custom AI/backend.
+- Browser PWA and Kotlin Fire tablet launcher.
+- Groq Whisper STT, GPT-OSS 20B conversation and Orpheus English WAV TTS.
+- Parent access gate, local speech segmentation, local transcript history and
+  bundled topic illustrations.
+- ChatGPT remains a separate destination for the photo action.
 
-## Phase 2 — documentation only
+## Future work
 
-- OpenAI Realtime API (separate API billing and backend/security design required)
-- Direct speech-to-speech interaction
-- Automatic conversation start within a supported custom integration
-- Custom child-safe system prompt, alongside a broader adult-led safety design
-- Session state
-- Animated talking character
-- Microphone integration
-- Camera/photo integration
-- Parent dashboard
-- Conversation controls
-- Activity modes: animals, cars, science, counting, storytelling, pronunciation practice
+- Parent-managed account or identity support beyond the shared access code.
+- Durable metrics and a persisted spend guard for multi-instance hosting.
+- Optional approved speech fallback, if a supported provider and its credentials
+  are configured deliberately.
+- Device synchronization and richer parent controls.
 
-Before implementing any of these, reassess age eligibility, adult involvement,
-data minimization, consent, retention, cost limits and supported platform APIs.
-A prompt alone does not make an application child-safe. A ChatGPT Plus subscription
-is not a substitute for an API integration or its billing.
-
-## Phase 3 — documentation only
-
-- Richer animated avatar
-- Optional Rive/Lottie character
-- Talking/listening visual states
-- Parental activity reports
-- Selectable learning activities
-- Child progress/preferences
-- Device synchronization
-
-None of the Phase 2 or Phase 3 integrations are implemented in this starter.
+Any added feature should preserve the immutable master prompt, minimize child
+data, keep adult supervision clear and be checked on supported devices.

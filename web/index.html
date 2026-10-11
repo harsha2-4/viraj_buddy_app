@@ -102,8 +102,14 @@
     <div class="dialog-content">
       <p class="eyebrow">FOR GROWN-UPS</p>
       <h2 id="settings-title">Viraj AI Buddy</h2>
-      <p>Version 0.2 · Animated voice adventures</p>
-      <p>Tap Talk to Buddy to start a voice adventure. Live voice sends microphone audio to OpenAI and uses an AI-generated voice. Stay with your child during the activity. Ending the conversation turns off the microphone.</p>
+      <p>Version 0.3 · Groq powered voice adventures</p>
+      <p>Voice uses Groq for speech recognition, conversation and spoken replies. Microphone audio is sent only after local speech detection. Stay with your child during the activity. Ending the conversation turns off the microphone.</p>
+      <section class="screen-settings" aria-labelledby="voice-access-heading">
+        <h3 id="voice-access-heading">Voice setup</h3>
+        <button id="verify-voice-setup" type="button">Check voice setup</button>
+        <p id="voice-setup-status" role="status">Tap Talk to Buddy to begin. Check voice setup to confirm the server can reach Groq.</p>
+        <p id="voice-usage-status" role="status">Daily usage appears after voice setup is checked.</p>
+      </section>
       <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
       <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
       <p>Show Buddy Something opens the separate ChatGPT destination for photos. That conversation does not control this character.</p>
@@ -118,6 +124,7 @@
       <section class="history-panel" aria-labelledby="history-heading">
         <h3 id="history-heading">Conversation history</h3>
         <p id="history-status" role="status">History is saved on this device only.</p>
+        <p id="conversation-memory-status">Recent history helps Buddy continue the conversation.</p>
         <div id="history-list"></div>
         <button id="clear-history" class="history-clear" type="button">Clear conversation history</button>
       </section>

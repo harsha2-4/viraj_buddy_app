@@ -13,7 +13,8 @@ export class AvatarController {
   }
 
   setState(state) {
-    this.element.dataset.state = ['idle', 'happy', 'connecting', 'listening', 'thinking', 'talking'].includes(state) ? state : 'idle';
+    const mapped = { transcribing: 'thinking', generating: 'thinking', generatingSpeech: 'thinking' }[state] || state;
+    this.element.dataset.state = ['idle', 'happy', 'connecting', 'listening', 'thinking', 'talking'].includes(mapped) ? mapped : 'idle';
   }
 
   celebrate() {
