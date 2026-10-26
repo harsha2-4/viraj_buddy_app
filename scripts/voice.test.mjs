@@ -37,6 +37,7 @@ test('recording negotiation and TTS chunks retain full text within 200 character
   assert.equal(chooseRecordingType({ isTypeSupported: type => type === 'audio/mp4' }), 'audio/mp4');
   assert.equal(audioConfig.vad.endSilenceMs, 1000);
   assert.equal(audioConfig.vad.maxUtteranceMs, 15000);
+  assert.equal(audioConfig.followUpDelayMs, 20000);
   for (const text of [
     'A small reply.',
     'A very long story about a friendly dinosaur. '.repeat(30),
@@ -131,6 +132,41 @@ test('voice recovery shows its error after returning to the listening state', ()
     'state:listening',
     'error:Accept the Groq speech model terms.'
   ]);
+});
+
+test('a 20-second silence triggers one conversational follow-up', async () => {
+  const originalSetTimeout = globalThis.setTimeout;
+  const originalClearTimeout = globalThis.clearTimeout;
+  const originalDocument = globalThis.document;
+  let timerCallback;
+  let delay;
+  let request;
+  const session = Object.create(VoiceSession.prototype);
+  session.followUpAvailable = true;
+  session.busy = false;
+  session.outputActive = false;
+  session.muted = false;
+  session.stream = { getAudioTracks: () => [{ enabled: true }] };
+  session.reply = (...args) => { request = args; return Promise.resolve(); };
+  globalThis.setTimeout = callback => { timerCallback = callback; return 1; };
+  globalThis.clearTimeout = () => {};
+  globalThis.document = { hidden: false };
+  try {
+    session.armFollowUp(() => true);
+    delay = audioConfig.followUpDelayMs;
+    assert.equal(delay, 20000);
+    timerCallback();
+    assert.equal(session.followUpAvailable, false);
+    assert.equal(session.busy, true);
+    assert.equal(request[0], '');
+    assert.equal(request[2], false);
+    assert.equal(request[4], true);
+  } finally {
+    globalThis.setTimeout = originalSetTimeout;
+    globalThis.clearTimeout = originalClearTimeout;
+    if (originalDocument === undefined) delete globalThis.document;
+    else globalThis.document = originalDocument;
+  }
 });
 
 test('local speech speaks the reply when Groq speech synthesis is unavailable', async () => {
@@ -275,6 +311,18 @@ test('STT, LLM and WAV TTS use Groq APIs and send the exact master prompt as sys
   assert.deepEqual([...new Uint8Array(await speech.arrayBuffer())], [82, 73, 70, 70, 0, 0, 0, 0, 87, 65, 86, 69]);
   assert.equal(calls[2].url, 'https://api.groq.com/openai/v1/audio/speech');
   assert.deepEqual(JSON.parse(calls[2].options.body), { model: 'canopylabs/orpheus-v1-english', voice: 'troy', input: 'Wonderful!', response_format: 'wav' });
+  const followUp = await fetch(base + '/api/voice/reply', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ turnId: 'follow-up-1', transcript: '', followUp: true, history: [{ role: 'assistant', content: 'Which animal should we meet?' }] })
+  });
+  assert.equal((await followUp.json()).reply, 'Wonderful! Shall we count two trucks?');
+  assert.equal(calls[3].url, 'https://api.groq.com/openai/v1/chat/completions');
+  const followUpBody = JSON.parse(calls[3].options.body);
+  assert.deepEqual(followUpBody.messages.at(-1), {
+    role: 'user',
+    content: 'About 20 seconds have passed since your last spoken turn and the child has not responded. Gently follow up once, changing to a fresh playful topic or activity. Keep it brief, offer an easy way to join in, and do not pressure the child.'
+  });
   const invalidProfile = await fetch(base + '/api/voice/reply', {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },

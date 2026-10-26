@@ -173,17 +173,24 @@ export function createBuddyServer({ env = process.env, fetcher = fetch, now = ()
           const turnId = safeText(input.turnId, 100);
           const transcript = safeText(input.transcript, 4000).trim();
           const opening = input.opening === true;
+          const followUp = input.followUp === true;
           const profileNote = voiceProfileNote(input.voiceProfile);
           if (!turnId) return send(res, 400, { error: 'A turn identifier is required.' });
-          if (opening && usage.estimatedUsd >= config.maxDailyUsd) return send(res, 429, { error: 'Buddy has reached today’s voice limit. A grown-up can check the server settings.' });
-          if (!opening && !transcript) return send(res, 400, { error: 'A transcript is needed before Buddy can answer.' });
+          if (opening && followUp) return send(res, 400, { error: 'A reply cannot be both an opening and a follow-up.' });
+          if ((opening || followUp) && usage.estimatedUsd >= config.maxDailyUsd) return send(res, 429, { error: 'Buddy has reached today’s voice limit. A grown-up can check the server settings.' });
+          if (!opening && !followUp && !transcript) return send(res, 400, { error: 'A transcript is needed before Buddy can answer.' });
           if (profileNote === undefined) return send(res, 400, { error: 'Voice profile data was invalid. Please ask a grown-up to set up the profile again.' });
           const messages = [{ role: 'system', content: await readFile(masterPromptPath, 'utf8') }];
           if (profileNote) messages.push({ role: 'system', content: profileNote });
           for (const item of Array.isArray(input.history) ? input.history.slice(-12) : []) {
             if (['user', 'assistant'].includes(item?.role) && typeof item.content === 'string') messages.push({ role: item.role, content: item.content.slice(0, 1200) });
           }
-          messages.push({ role: 'user', content: opening ? 'Begin this voice conversation now. Follow your system instructions.' : transcript });
+          const userMessage = opening
+            ? 'Begin this voice conversation now. Follow your system instructions.'
+            : followUp
+              ? 'About 20 seconds have passed since your last spoken turn and the child has not responded. Gently follow up once, changing to a fresh playful topic or activity. Keep it brief, offer an easy way to join in, and do not pressure the child.'
+              : transcript;
+          messages.push({ role: 'user', content: userMessage });
           const result = await deduplicated(`llm:${turnId}`, async () => {
             const response = await groq('/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: config.llmModel, messages, max_completion_tokens: 1024 }) });
             const data = await response.json();

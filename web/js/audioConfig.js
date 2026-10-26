@@ -7,6 +7,7 @@ export const audioConfig = {
     endSilenceMs: 1000,
     maxUtteranceMs: 15000
   },
+  followUpDelayMs: 20000,
   minSpeechMs: 200,
   debug: { enabled: false }
 };

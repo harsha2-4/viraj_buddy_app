@@ -94,7 +94,11 @@ The browser pauses its microphone while Buddy's WAV or built-in speech plays, th
 again while the foreground page remains active. Orpheus input is limited to 200
 characters; longer replies are split at punctuation and word boundaries, then
 synthesized and played sequentially. Backgrounded or locked devices may suspend
-microphone access; continuous listening is not supported in those states.
+microphone access; continuous listening is not supported in those states. After
+about 20 seconds without detected speech following a reply, Buddy makes one
+gentle follow-up with a fresh activity or topic. The timer pauses when the page
+is hidden, the microphone is muted, or speech is detected; Buddy does not keep
+prompting if the child remains quiet.
 
 ## Host deployment
 

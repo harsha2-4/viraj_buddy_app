@@ -1,5 +1,5 @@
 // Increment when releasing changes so existing installations receive a fresh shell.
-const VERSION = 'v20';
+const VERSION = 'v21';
 // Include scope: two deployments on the same github.io origin must not delete each other's caches.
 const PREFIX = `viraj-buddy:${self.registration.scope}:`;
 const CACHE = `${PREFIX}${VERSION}`;

@@ -17,6 +17,8 @@ export class VoiceSession {
     this.sessionCurrent = current;
     this.history = history.slice(-12);
     this.voiceProfile = voiceProfile;
+    this.followUpAvailable = false;
+    this.muted = false;
     this.onActive(true);
     this.onState('connecting');
     try {
@@ -35,6 +37,8 @@ export class VoiceSession {
       this.visibilityHandler = () => {
         if (!current()) return;
         if (document.hidden) {
+          clearTimeout(this.followUpTimer);
+          this.followUpTimer = null;
           this.stream?.getAudioTracks().forEach(track => { track.enabled = false; });
           if (this.capturing) {
             this.capturing = false;
@@ -47,6 +51,7 @@ export class VoiceSession {
           if (!this.busy && !this.outputActive) this.stream?.getAudioTracks().forEach(track => { track.enabled = true; });
           if (this.recorder?.state === 'inactive' && !this.busy && !this.outputActive) this.createRecorder(current);
           if (!this.busy && !this.outputActive) this.onState('listening');
+          this.armFollowUp(current);
         }
       };
       document.addEventListener('visibilitychange', this.visibilityHandler);
@@ -94,7 +99,10 @@ export class VoiceSession {
           this.stream?.getAudioTracks().forEach(track => { track.enabled = false; });
           this.process(new Blob(chunks, { type: this.recordingMime }), duration, current).catch(error => this.recover(error, current));
         }
-        else this.onState('listening');
+        else {
+          this.onState('listening');
+          this.armFollowUp(current);
+        }
       }
     };
     this.recorder.start(200);
@@ -120,6 +128,8 @@ export class VoiceSession {
 
   beginCapture(current) {
     if (this.capturing || this.outputActive) return;
+    clearTimeout(this.followUpTimer);
+    this.followUpTimer = null;
     this.speechFrames = 0;
     this.capturing = true;
     this.lastSpeechAt = Date.now();
@@ -155,6 +165,7 @@ export class VoiceSession {
     if (!current()) return;
     const transcript = String(transcriptResult.transcript || '').trim();
     if (!transcript) throw new Error('I didn’t quite hear that. Try once more.');
+    this.followUpAvailable = false;
     this.onTranscript(transcript);
     this.onMessage?.('user', transcript);
     this.history.push({ role: 'user', content: transcript });
@@ -162,9 +173,9 @@ export class VoiceSession {
     await this.reply(transcript, turnId, false, current);
   }
 
-  async reply(transcript, turnId, opening, current) {
+  async reply(transcript, turnId, opening, current, followUp = false) {
     this.onState('generating');
-    const result = await this.request('/api/voice/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnId, transcript, opening, history: this.history, voiceProfile: this.voiceProfile }) });
+    const result = await this.request('/api/voice/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnId, transcript, opening, followUp, history: this.history, voiceProfile: this.voiceProfile }) });
     if (!current()) return;
     const reply = String(result.reply || '').trim();
     if (!reply) throw new Error('Buddy could not form a reply. Please try again.');
@@ -172,6 +183,7 @@ export class VoiceSession {
     this.onMessage?.('assistant', reply);
     this.history.push({ role: 'assistant', content: reply });
     this.history = this.history.slice(-12);
+    this.followUpAvailable = !followUp;
     await this.speak(reply, turnId, current);
   }
 
@@ -215,12 +227,27 @@ export class VoiceSession {
     } finally {
       this.outputActive = false;
       this.busy = false;
-      this.stream?.getAudioTracks().forEach(track => { track.enabled = !document.hidden; });
+      this.stream?.getAudioTracks().forEach(track => { track.enabled = !globalThis.document?.hidden && !this.muted; });
       if (current()) {
         this.onState('listening');
         if (this.recorder?.state === 'inactive') this.createRecorder(current);
+        this.armFollowUp(current);
       }
     }
+  }
+
+  armFollowUp(current) {
+    clearTimeout(this.followUpTimer);
+    this.followUpTimer = null;
+    if (!this.followUpAvailable || typeof current !== 'function' || !current() || globalThis.document?.hidden || this.muted) return;
+    this.followUpTimer = setTimeout(() => {
+      this.followUpTimer = null;
+      if (!current() || !this.followUpAvailable || this.busy || this.outputActive || globalThis.document?.hidden || this.muted) return;
+      this.followUpAvailable = false;
+      this.busy = true;
+      this.stream?.getAudioTracks().forEach(track => { track.enabled = false; });
+      this.reply('', crypto.randomUUID(), false, current, true).catch(error => this.recover(error, current));
+    }, audioConfig.followUpDelayMs);
   }
 
   async speakLocally(chunks, current) {
@@ -281,14 +308,22 @@ export class VoiceSession {
   recover(error, current) {
     if (!current()) return;
     this.busy = false;
-    this.stream?.getAudioTracks().forEach(track => { track.enabled = true; });
+    this.stream?.getAudioTracks().forEach(track => { track.enabled = !globalThis.document?.hidden && !this.muted; });
     if (this.recorder?.state === 'inactive') this.createRecorder(current);
     this.onState('listening');
     this.onError(error.message || 'Voice had a little hiccup. Try speaking again.');
+    this.armFollowUp(current);
   }
 
   logDebug(...args) { if (audioConfig.debug.enabled) console.info('[Buddy audio]', ...args); }
-  mute(value) { this.stream?.getAudioTracks().forEach(track => { track.enabled = !value; }); }
+  mute(value) {
+    this.muted = value;
+    this.stream?.getAudioTracks().forEach(track => { track.enabled = !value; });
+    if (value) {
+      clearTimeout(this.followUpTimer);
+      this.followUpTimer = null;
+    } else this.armFollowUp(this.sessionCurrent);
+  }
   async enableAudio() {
     try {
       if (this.pendingSpeech && this.sessionCurrent?.()) {
@@ -304,6 +339,8 @@ export class VoiceSession {
   stop(preserveConversation = false) {
     this.generation++;
     clearInterval(this.listenTimer); clearTimeout(this.maxTimer);
+    clearTimeout(this.followUpTimer);
+    this.followUpTimer = null;
     this.localSpeechSynthesis?.cancel();
     this.localSpeechSynthesis = null;
     if (this.visibilityHandler) document.removeEventListener('visibilitychange', this.visibilityHandler);
@@ -314,6 +351,7 @@ export class VoiceSession {
     this.context?.close().catch(() => {});
     this.stream = this.analyser = this.recorder = this.context = null;
     this.capturing = this.finalizePending = this.outputActive = this.busy = false;
+    this.followUpAvailable = false;
     this.turns.clear();
     this.voiceProfile = null;
     this.pendingSpeech = null;
