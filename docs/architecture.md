@@ -4,7 +4,7 @@
 
 ```text
 iPhone Safari/PWA or Fire Android wrapper
-  → web assets and localStorage history
+  → web assets, localStorage history, and parent-approved voice profile in IndexedDB
   → local MediaRecorder segmentation and VAD
   → same-origin Node API
   → Groq STT → Groq LLM + exact master prompt → Groq WAV TTS
@@ -16,11 +16,15 @@ validates fixed model IDs and server settings. The Groq key is used only in the
 backend `Authorization` header. API calls require the configured parent code and
 exact `BUDDY_ORIGIN`; rate and usage counters are in memory.
 
-`server/master-prompt.md` is the only conversational instruction source. The
-server reads its complete contents as UTF-8 and places them in the `system`
-message. The recorded SHA-256 in `server/master-prompt.sha256` is checked by the
-tests. Prior turns are bounded user/assistant messages from browser local storage;
-they cannot replace the system prompt.
+`server/master-prompt.md` is the authoritative personality and safety prompt.
+The server reads its complete contents as UTF-8 and places them in the first
+`system` message. A second server-generated system message may carry only the
+validated pitch and voice-level categories from the profile; arbitrary client
+text is never used for that message. The raw enrollment sample stays in browser
+IndexedDB and is never uploaded. The recorded SHA-256 in
+`server/master-prompt.sha256` is checked by the tests. Prior turns are bounded
+user/assistant messages from browser local storage; they cannot replace the
+system prompt.
 
 The browser applies supported microphone constraints, captures a short pre-roll,
 detects speech with adaptive RMS energy, and waits for end-of-speech silence.
@@ -32,7 +36,9 @@ and played in order. Device/browser suspension can stop foreground microphone us
 `web/js/animations.js` maps voice states to the existing animated character.
 `web/js/scenes.js` selects local illustrations from conversation text. `history.js`
 stores up to 50 conversations in local storage and shares a maximum of 12 recent
-messages with the API on a new turn. Raw audio is not persisted by the app.
+messages with the API on a new turn. The child profile's raw sample remains in
+IndexedDB until explicitly deleted. A profile is not speaker identification,
+authentication, or voice filtering.
 
 ## Launcher and photo path
 

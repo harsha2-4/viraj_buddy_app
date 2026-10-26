@@ -6,12 +6,13 @@ import { createBuddyServer } from '../server/index.mjs';
 import { GROQ_MODELS, loadGroqConfig } from '../server/groq-config.mjs';
 import { audioConfig, chooseRecordingType, splitConversationalSpeech, splitSpeechText } from '../web/js/audioConfig.js';
 import { VoiceSession } from '../web/js/voice.js';
+import { analyzeVoiceFrames } from '../web/js/voiceProfile.js';
 
 const promptUrl = new URL('../server/master-prompt.md', import.meta.url);
 const baselineUrl = new URL('../server/master-prompt.sha256', import.meta.url);
 const expectedPromptHash = (await readFile(baselineUrl, 'utf8')).trim();
 
-test('authoritative master prompt matches its original SHA-256 baseline byte for byte', async () => {
+test('authoritative master prompt matches its recorded SHA-256 baseline byte for byte', async () => {
   const prompt = await readFile(promptUrl);
   assert.equal(createHash('sha256').update(prompt).digest('hex'), expectedPromptHash);
 });
@@ -46,6 +47,22 @@ test('recording negotiation and TTS chunks retain full text within 200 character
     assert.equal(chunks.join(' ').replace(/\s+/g, ' ').trim(), text.replace(/\s+/g, ' ').trim());
   }
   assert.deepEqual(splitSpeechText(''), []);
+});
+
+test('voice profiling derives broad pitch and energy bands without retaining transcript text', () => {
+  const sampleRate = 48000;
+  const frames = Array.from({ length: 6 }, (_, frameIndex) => {
+    const samples = new Float32Array(2048);
+    for (let index = 0; index < samples.length; index++) {
+      samples[index] = 0.04 * Math.sin(2 * Math.PI * 220 * (frameIndex * samples.length + index) / sampleRate);
+    }
+    return samples;
+  });
+  const profile = analyzeVoiceFrames(frames, sampleRate);
+  assert.equal(profile.pitchBand, 'middle');
+  assert.equal(profile.energy, 'steady');
+  assert.equal(typeof profile.profiledAt, 'string');
+  assert.throws(() => analyzeVoiceFrames([], sampleRate), /clear voice sample/);
 });
 
 test('spoken replies remove visual markup and emojis and preserve natural sentence pauses', () => {
@@ -164,6 +181,7 @@ test('voice sends earlier turns from the active session as conversation context'
   let transcript = 'I like elephants.';
   const session = Object.create(VoiceSession.prototype);
   session.history = [{ role: 'assistant', content: 'We are playing an animal game.' }];
+  session.voiceProfile = { pitchBand: 'higher', energy: 'soft' };
   session.turns = new Set();
   session.recordingMime = 'audio/webm';
   session.onState = () => {};
@@ -180,6 +198,7 @@ test('voice sends earlier turns from the active session as conversation context'
   transcript = 'They spray water.';
   await session.process(new Blob(['second recording']), 1000, () => true);
   assert.deepEqual(replies[0].history, [{ role: 'assistant', content: 'We are playing an animal game.' }, { role: 'user', content: 'I like elephants.' }]);
+  assert.deepEqual(replies[0].voiceProfile, { pitchBand: 'higher', energy: 'soft' });
   assert.deepEqual(replies[1].history, [
     { role: 'assistant', content: 'We are playing an animal game.' },
     { role: 'user', content: 'I like elephants.' },
@@ -238,20 +257,30 @@ test('STT, LLM and WAV TTS use Groq APIs and send the exact master prompt as sys
   assert.equal(calls[0].url, 'https://api.groq.com/openai/v1/audio/transcriptions');
   assert.match(await calls[0].options.body.get('file').text(), /test audio/);
   assert.equal(calls[0].options.body.get('model'), 'whisper-large-v3-turbo');
-  const reply = await fetch(base + '/api/voice/reply', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ turnId: 'turn-1', transcript: 'Yes!', history: [{ role: 'assistant', content: 'We can play!' }] }) });
+  const reply = await fetch(base + '/api/voice/reply', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ turnId: 'turn-1', transcript: 'Yes!', history: [{ role: 'assistant', content: 'We can play!' }], voiceProfile: { pitchBand: 'higher', energy: 'soft' } }) });
   assert.equal((await reply.json()).reply, 'Wonderful! Shall we count two trucks?');
   assert.equal(calls[1].url, 'https://api.groq.com/openai/v1/chat/completions');
   assert.deepEqual(promptSystem, { role: 'system', content: prompt });
   const llmBody = JSON.parse(calls[1].options.body);
   assert.equal(llmBody.model, 'openai/gpt-oss-20b');
   assert.equal(llmBody.max_completion_tokens, 1024);
-  assert.deepEqual(llmBody.messages[1], { role: 'assistant', content: 'We can play!' });
-  assert.deepEqual(llmBody.messages[2], { role: 'user', content: 'Yes!' });
+  assert.deepEqual(llmBody.messages[1], {
+    role: 'system',
+    content: 'A rough, local acoustic sample suggests a soft speaking level and higher pitch. These are uncertain sound measurements, not speaker identification. Use them only as gentle delivery hints. Do not infer identity, age, gender, mood, health, or intent from them.'
+  });
+  assert.deepEqual(llmBody.messages[2], { role: 'assistant', content: 'We can play!' });
+  assert.deepEqual(llmBody.messages[3], { role: 'user', content: 'Yes!' });
   const speech = await fetch(base + '/api/voice/speak', { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'Wonderful!', requestId: 'turn-1:0' }) });
   assert.equal(speech.headers.get('content-type'), 'audio/wav');
   assert.deepEqual([...new Uint8Array(await speech.arrayBuffer())], [82, 73, 70, 70, 0, 0, 0, 0, 87, 65, 86, 69]);
   assert.equal(calls[2].url, 'https://api.groq.com/openai/v1/audio/speech');
   assert.deepEqual(JSON.parse(calls[2].options.body), { model: 'canopylabs/orpheus-v1-english', voice: 'troy', input: 'Wonderful!', response_format: 'wav' });
+  const invalidProfile = await fetch(base + '/api/voice/reply', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ turnId: 'turn-invalid-profile', transcript: 'Hello!', voiceProfile: { pitchBand: 'my voice', energy: 'soft' } })
+  });
+  assert.equal(invalidProfile.status, 400);
   const browserSources = await Promise.all(['../web/js/app.js', '../web/js/voice.js', '../web/js/config.js'].map(file => readFile(new URL(file, import.meta.url), 'utf8')));
   assert.equal(browserSources.some(source => source.includes('server-only-secret') || source.includes('GROQ_API_KEY')), false);
 });

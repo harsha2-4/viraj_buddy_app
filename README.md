@@ -30,9 +30,9 @@ configure a host-level spend limit as well as the local estimated daily guard.
 
 `server/master-prompt.md` is the authoritative personality and safety prompt.
 The server reads the file as UTF-8 without trimming it and sends those exact
-contents as the LLM system message. Its original SHA-256 is recorded in
-`server/master-prompt.sha256`; `npm test` fails if any prompt byte changes. Do not
-edit the prompt or its hash without an explicitly authorized prompt update.
+contents as the LLM system message. Its current SHA-256 is recorded in
+`server/master-prompt.sha256`; `npm test` fails if any prompt byte changes. The
+hash was updated with this authorized child-voice prompt change.
 
 ## Setup and run
 
@@ -46,7 +46,13 @@ npm start
 ```
 
 Open `http://localhost:8080`, choose **Talk to Buddy**, and allow microphone
-access. In **Parents**, **Check voice setup** calls Groq's models API to confirm
+access. Before the first voice adventure, **Parents** asks a grown-up to approve
+and record a short child voice sample. The raw sample and derived profile are
+kept in browser IndexedDB until deleted in Parents settings. Only rough pitch
+and voice-level categories accompany reply requests to Groq; the raw sample is
+never uploaded. Live conversation recordings are still sent to Groq for
+transcription. The profile cannot identify a speaker or filter other voices.
+In **Parents**, **Check voice setup** calls Groq's models API to confirm
 the configured account exposes all three model IDs. Local development works on
 localhost; phones and PWAs need the hosted service over HTTPS.
 If Groq's Orpheus TTS is unavailable (for example, while its terms are pending),
@@ -113,10 +119,15 @@ and [Fire tablet installation](docs/fire-tablet-installation.md).
 
 ## Privacy and limitations
 
-The app does not save raw audio on the server. Transcripts and replies are saved
-in browser local storage on that device and sent as bounded recent history to
-Groq for context. Avoid collecting sensitive information; a parent should stay
-with the child. Rate and spend counters are in memory and reset when the server
+The app does not persist raw conversation audio on its server. The short
+enrollment sample is intentionally saved in browser IndexedDB on that device
+until removed with **Parents → Delete voice profile**. Its approximate pitch
+and voice-level categories accompany reply requests to Groq; live conversation
+audio is sent to Groq for transcription, and transcripts/replies are saved in
+browser local storage and sent as bounded recent history. Enrollment does not
+identify speakers, authenticate the child, or filter out other voices. A parent
+should stay with the child and remove the saved profile when it is no longer
+needed. Rate and spend counters are in memory and reset when the server
 restarts. HTTPS, host-level authentication/rate controls and provider billing
 limits are needed for a public deployment. Browser microphone access cannot
 continue while an iPhone is locked or the browser suspends the page. No actual

@@ -6,6 +6,7 @@ import { getChatGptDestination } from './navigation.js';
 import { VoiceSession } from './voice.js';
 import { SceneController } from './scenes.js';
 import { addConversationMessage, clearConversations, endConversation, listConversations, startConversation } from './history.js';
+import { clearVoiceProfile, getVoiceProfile, recordVoiceProfile, saveVoiceProfile } from './voiceProfile.js';
 
 const byId = (id) => document.getElementById(id);
 const showHistoryWarning = (message = '') => {
@@ -45,6 +46,8 @@ let active = false;
 let voiceErrorVisible = false;
 let muted = false;
 let activeConversationId;
+let profileAbortController;
+dialog.addEventListener('close', () => profileAbortController?.abort());
 const scene = new SceneController(byId('scene'));
 const states = { idle: 'Your AI adventure buddy', connecting: 'Connecting…', listening: 'I’m listening', thinking: 'Let me think…', transcribing: 'I’m listening', generating: 'Let me think…', generatingSpeech: 'Getting ready to speak…', talking: 'Buddy is talking' };
 let conversationMemoryEnabled = true;
@@ -95,6 +98,7 @@ const voice = new VoiceSession({
     if (value && keepScreenAwake) wakeLock.start();
     else wakeLock.stop();
     talkButton.hidden = value;
+    if (!value) talkButton.disabled = false;
     photoButton.hidden = value || !CONFIG.enableCameraButton;
     byId('voice-controls').hidden = !value;
     if (!value) {
@@ -117,7 +121,21 @@ function showSettings() {
   byId('destination-status').textContent = configured ? 'Configured' : 'Not Configured';
   byId('setup-help').hidden = configured;
   renderHistory();
+  renderVoiceProfile();
   if (!dialog.open) dialog.showModal();
+}
+
+async function renderVoiceProfile() {
+  try {
+    const record = await getVoiceProfile();
+    byId('voice-profile-status').textContent = record
+      ? `Saved on this device. Rough profile: ${record.profile.energy} voice level, ${record.profile.pitchBand} pitch.`
+      : 'No voice profile is saved on this device.';
+    byId('delete-voice-profile').hidden = !record;
+  } catch (error) {
+    byId('voice-profile-status').textContent = `Voice profile could not be read: ${error.message}`;
+    byId('delete-voice-profile').hidden = false;
+  }
 }
 
 function renderHistory() {
@@ -181,8 +199,17 @@ function openBuddy(mode) {
   navigationTimer = setTimeout(() => window.location.assign(destination), 450);
 }
 
-function startVoice() {
+async function startVoice() {
+  talkButton.disabled = true;
   try {
+    const profileRecord = await getVoiceProfile();
+    if (!profileRecord) {
+      status.textContent = 'A grown-up needs to set up the child voice profile before the first voice adventure.';
+      showSettings();
+      byId('voice-profile-status').textContent = 'Please ask a grown-up to review the voice-profile notice and record a short sample first.';
+      talkButton.disabled = false;
+      return;
+    }
     voiceErrorVisible = false;
     activeConversationId = startConversation();
     const history = (conversationMemoryEnabled ? listConversations().reverse().flatMap(conversation => conversation.messages) : [])
@@ -191,11 +218,13 @@ function startVoice() {
     byId('transcript').hidden = true;
     byId('transcript').textContent = '';
     scene.show('home');
-    voice.start({ history, initialTurnId: crypto.randomUUID() });
+    await voice.start({ history, voiceProfile: profileRecord.profile, initialTurnId: crypto.randomUUID() });
   } catch (error) {
     activeConversationId = undefined;
-    byId('history-status').textContent = `Conversation history is unavailable: ${error.message}`;
-    showHistoryWarning(`Conversation history is unavailable: ${error.message}`);
+    status.textContent = `Voice could not start: ${error.message}`;
+    if (dialog.open) byId('voice-profile-status').textContent = `Voice profile could not be read: ${error.message}`;
+  } finally {
+    if (!active) talkButton.disabled = false;
   }
 }
 talkButton.addEventListener('click', startVoice);
@@ -265,6 +294,57 @@ byId('clear-history').addEventListener('click', () => {
     renderHistory();
   } catch (error) {
     byId('history-status').textContent = `Conversation history could not be cleared: ${error.message}`;
+  }
+});
+byId('create-voice-profile').addEventListener('click', async () => {
+  const button = byId('create-voice-profile');
+  if (!byId('voice-profile-consent').checked) {
+    byId('voice-profile-status').textContent = 'A parent or guardian must review and agree to the voice-sample storage notice first.';
+    byId('voice-profile-consent').focus();
+    return;
+  }
+  const consent = byId('voice-profile-consent');
+  const deleteButton = byId('delete-voice-profile');
+  const cancelButton = byId('cancel-voice-profile');
+  const controller = new AbortController();
+  profileAbortController = controller;
+  button.disabled = true;
+  deleteButton.disabled = true;
+  consent.disabled = true;
+  cancelButton.hidden = false;
+  byId('voice-profile-status').textContent = 'Recording for a few seconds. Please ask the child to answer the three prompts.';
+  try {
+    const { profile, sample } = await recordVoiceProfile({ signal: controller.signal });
+    if (controller.signal.aborted) throw new Error('Voice profile recording was canceled.');
+    await saveVoiceProfile(profile, sample);
+    byId('voice-profile-status').textContent = 'Voice profile saved on this device. The raw sample stays here until deleted.';
+    await renderVoiceProfile();
+  } catch (error) {
+    byId('voice-profile-status').textContent = controller.signal.aborted
+      ? 'Voice recording was canceled. No new sample was saved.'
+      : `Voice profile could not be saved: ${error.message}`;
+  } finally {
+    profileAbortController = null;
+    cancelButton.hidden = true;
+    deleteButton.disabled = false;
+    consent.disabled = false;
+    button.disabled = false;
+  }
+});
+byId('cancel-voice-profile').addEventListener('click', () => profileAbortController?.abort());
+byId('voice-profile-consent').addEventListener('change', (event) => {
+  if (!event.currentTarget.checked) profileAbortController?.abort();
+});
+byId('delete-voice-profile').addEventListener('click', async () => {
+  if (!window.confirm('Delete the saved child voice sample and profile from this device?')) return;
+  try {
+    profileAbortController?.abort();
+    if (active) voice.stop();
+    await clearVoiceProfile();
+    await renderVoiceProfile();
+    status.textContent = 'The child voice profile was deleted from this device.';
+  } catch (error) {
+    byId('voice-profile-status').textContent = `Voice profile could not be deleted: ${error.message}`;
   }
 });
 // Restore controls after returning via Back (including iOS's back/forward cache).

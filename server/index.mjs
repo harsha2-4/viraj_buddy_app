@@ -10,6 +10,14 @@ const masterPromptPath = fileURLToPath(new URL('./master-prompt.md', import.meta
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/manifest+json' };
 const safeText = (value, limit) => typeof value === 'string' ? value.slice(0, limit) : '';
 
+function voiceProfileNote(value) {
+  if (value === undefined) return null;
+  const validPitch = ['lower', 'middle', 'higher'].includes(value?.pitchBand);
+  const validEnergy = ['soft', 'steady', 'strong'].includes(value?.energy);
+  if (!validPitch || !validEnergy) return undefined;
+  return `A rough, local acoustic sample suggests a ${value.energy} speaking level and ${value.pitchBand} pitch. These are uncertain sound measurements, not speaker identification. Use them only as gentle delivery hints. Do not infer identity, age, gender, mood, health, or intent from them.`;
+}
+
 async function readJson(req, limit = 128 * 1024) {
   let body = '';
   for await (const chunk of req) {
@@ -165,10 +173,13 @@ export function createBuddyServer({ env = process.env, fetcher = fetch, now = ()
           const turnId = safeText(input.turnId, 100);
           const transcript = safeText(input.transcript, 4000).trim();
           const opening = input.opening === true;
+          const profileNote = voiceProfileNote(input.voiceProfile);
           if (!turnId) return send(res, 400, { error: 'A turn identifier is required.' });
           if (opening && usage.estimatedUsd >= config.maxDailyUsd) return send(res, 429, { error: 'Buddy has reached today’s voice limit. A grown-up can check the server settings.' });
           if (!opening && !transcript) return send(res, 400, { error: 'A transcript is needed before Buddy can answer.' });
+          if (profileNote === undefined) return send(res, 400, { error: 'Voice profile data was invalid. Please ask a grown-up to set up the profile again.' });
           const messages = [{ role: 'system', content: await readFile(masterPromptPath, 'utf8') }];
+          if (profileNote) messages.push({ role: 'system', content: profileNote });
           for (const item of Array.isArray(input.history) ? input.history.slice(-12) : []) {
             if (['user', 'assistant'].includes(item?.role) && typeof item.content === 'string') messages.push({ role: item.role, content: item.content.slice(0, 1200) });
           }

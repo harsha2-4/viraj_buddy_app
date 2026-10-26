@@ -10,12 +10,13 @@ export class VoiceSession {
     this.turns = new Set();
   }
 
-  async start({ history = [], initialTurnId = '' } = {}) {
+  async start({ history = [], voiceProfile, initialTurnId = '' } = {}) {
     this.stop(true);
     const generation = this.generation;
     const current = () => generation === this.generation;
     this.sessionCurrent = current;
     this.history = history.slice(-12);
+    this.voiceProfile = voiceProfile;
     this.onActive(true);
     this.onState('connecting');
     try {
@@ -163,7 +164,7 @@ export class VoiceSession {
 
   async reply(transcript, turnId, opening, current) {
     this.onState('generating');
-    const result = await this.request('/api/voice/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnId, transcript, opening, history: this.history }) });
+    const result = await this.request('/api/voice/reply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ turnId, transcript, opening, history: this.history, voiceProfile: this.voiceProfile }) });
     if (!current()) return;
     const reply = String(result.reply || '').trim();
     if (!reply) throw new Error('Buddy could not form a reply. Please try again.');
@@ -314,6 +315,7 @@ export class VoiceSession {
     this.stream = this.analyser = this.recorder = this.context = null;
     this.capturing = this.finalizePending = this.outputActive = this.busy = false;
     this.turns.clear();
+    this.voiceProfile = null;
     this.pendingSpeech = null;
     this.sessionCurrent = null;
     this.onAudioBlocked(false);

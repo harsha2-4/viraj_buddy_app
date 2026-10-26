@@ -110,6 +110,21 @@
         <p id="voice-setup-status" role="status">Tap Talk to Buddy to begin. Check voice setup to confirm the server can reach Groq.</p>
         <p id="voice-usage-status" role="status">Daily usage appears after voice setup is checked.</p>
       </section>
+      <section class="screen-settings" aria-labelledby="voice-profile-heading">
+        <h3 id="voice-profile-heading">Child voice profile</h3>
+        <p>Before the first voice adventure, a grown-up can record a short sample while the child answers the prompts below. The raw sample stays in this browser and is not uploaded. A rough pitch/voice-level summary is sent to Groq with replies to help Buddy adjust its wording. Live conversation audio is also sent to Groq for transcription. This profile cannot identify a speaker or filter out other voices.</p>
+        <p>During the recording, ask these one at a time: “Which animal would you pick for a story?” “Would you explore in a rocket, car, or submarine?” “What is one fun thing you like talking about?”</p>
+        <label class="profile-consent">
+          <input id="voice-profile-consent" type="checkbox">
+          <span>I am the child’s parent or guardian, and I agree to save this raw voice sample on this device and share its rough pitch/voice-level summary with Groq until the profile is deleted here.</span>
+        </label>
+        <div class="profile-actions">
+          <button id="create-voice-profile" type="button">Record voice profile</button>
+          <button id="cancel-voice-profile" type="button" hidden>Cancel recording</button>
+          <button id="delete-voice-profile" type="button" class="history-clear" hidden>Delete voice profile</button>
+        </div>
+        <p id="voice-profile-status" role="status">No voice profile is saved on this device.</p>
+      </section>
       <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
       <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
       <p>Show Buddy Something opens the separate ChatGPT destination for photos. That conversation does not control this character.</p>

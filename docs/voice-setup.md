@@ -54,13 +54,25 @@ spend limits as well.
 
 ## Prompt, history and privacy
 
-`server/master-prompt.md` remains the only authority for personality and safety.
-The backend loads the original UTF-8 bytes without trimming and sends the entire
-content in the LLM `system` message on every reply. `server/master-prompt.sha256`
-contains the recorded original hash. `npm test` checks its byte-for-byte
-integrity. Session history is stored in this device's local storage; at most 12
-recent messages are sent with a turn. The server does not persist audio,
-transcripts or replies. The Groq provider receives the submitted audio and text.
+`server/master-prompt.md` is the authoritative personality and safety prompt.
+The backend loads the full UTF-8 content without trimming and sends it as the
+first LLM `system` message on every reply. A second server-generated system
+message may contain the profile's validated rough pitch and voice-level bands;
+arbitrary client profile text is never sent as instructions.
+`server/master-prompt.sha256` contains the current prompt hash. `npm test`
+checks its byte-for-byte integrity. Session history is stored in this device's
+local storage; at most 12 recent messages are sent with a turn. The server does
+not persist audio, transcripts or replies, but Groq receives submitted live
+audio, text and the rough profile categories.
+
+Before the first voice session, a parent or guardian must approve recording a
+short sample answering three simple prompts. The raw enrollment recording and
+derived profile remain in this browser's IndexedDB until **Parents → Delete
+voice profile** is used. The recording itself is never uploaded. The profile
+contains only coarse pitch and voice-level bands; it is a rough acoustic hint,
+not speaker identification or authentication, and it cannot filter out other
+speakers. The live conversation microphone path still sends detected speech to
+Groq for transcription.
 
 The voice API has no app access-code gate. API origin validation, a per-IP
 in-memory rate limit, an audio upload cap and the estimated daily limit provide
@@ -70,7 +82,8 @@ A parent should remain present during use.
 
 ## Browser behavior
 
-After Talk is tapped, the browser requests microphone permission, applies the
+After a voice profile has been enrolled, Talk requests microphone permission,
+applies the
 supported echo cancellation, noise suppression and automatic gain settings, then
 uses a local adaptive-volume VAD. It keeps a short pre-roll, waits for the
 configured end-of-speech pause, rejects very short segments, and caps each
