@@ -44,7 +44,10 @@ restore action and provides a name. Enrollment audio is analyzed locally and
 discarded; only coarse derived pitch and energy bands are stored and sent.
 
 `web/js/animations.js` maps welcome and voice states to the existing animated character.
-`web/js/scenes.js` selects local illustrations from conversation text. `history.js`
+`web/js/scenes.js` selects allowlisted local illustrations from both the child's
+transcript and Buddy's reply, with a validated optional visual-hint extension point.
+Scene motion cues use only catalogued CSS animations and pause outside Buddy's
+speaking state; reduced-motion preferences remain respected. `history.js`
 stores up to 50 conversations per local profile and shares a maximum of 12 recent
 messages with the API on a new turn. A voice profile is not speaker identification,
 authentication, or voice filtering.

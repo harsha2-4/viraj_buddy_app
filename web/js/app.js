@@ -68,6 +68,9 @@ const voice = new VoiceSession({
     byId('transcript').textContent = text;
     scene.follow(text);
   },
+  onVisualHint(hint) {
+    scene.follow('', hint);
+  },
   onMessage(role, text) {
     if (!activeConversationId || !activeProfile) return;
     try {
@@ -214,6 +217,8 @@ function renderHistory() {
 function activateProfile(profile) {
   if (active) voice.stop();
   activeProfile = profile;
+  scene.show('home');
+  byId('scene').dataset.talking = 'false';
   let persistenceError;
   try {
     setActiveProfileId(profile.id);
@@ -254,6 +259,8 @@ function returnToWelcome() {
   byId('transcript').hidden = true;
   byId('history-warning').hidden = true;
   byId('buddy-state').textContent = 'Your AI adventure buddy';
+  scene.show('home');
+  byId('scene').dataset.talking = 'false';
   avatar.setState('welcome');
   showScreen('welcome');
   refreshUserSuggestions();

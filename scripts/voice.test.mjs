@@ -355,13 +355,17 @@ test('voice sends earlier turns from the active session as conversation context'
   session.recordingMime = 'audio/webm';
   session.onState = () => {};
   session.onTranscript = () => {};
+  const visualHints = [];
+  session.onVisualHint = hint => visualHints.push(hint);
   session.onMessage = () => {};
   session.speak = async () => {};
   session.request = async (url, options) => {
     if (url.endsWith('/transcribe')) return { transcript };
     const body = JSON.parse(options.body);
     replies.push(body);
-    return { reply: transcript === 'I like elephants.' ? 'Elephants have trunks!' : 'They can spray water.' };
+    return transcript === 'I like elephants.'
+      ? { reply: 'Elephants have trunks!', visualHint: { theme: 'animals', cue: 'float' } }
+      : { reply: 'They can spray water.' };
   };
   await session.process(new Blob(['first recording']), 1000, () => true);
   transcript = 'They spray water.';
@@ -374,6 +378,7 @@ test('voice sends earlier turns from the active session as conversation context'
     { role: 'assistant', content: 'Elephants have trunks!' },
     { role: 'user', content: 'They spray water.' }
   ]);
+  assert.deepEqual(visualHints, [{ theme: 'animals', cue: 'float' }, undefined]);
 });
 
 test('server serves model availability without an app access code', async t => {

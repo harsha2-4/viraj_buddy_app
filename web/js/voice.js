@@ -180,6 +180,7 @@ export class VoiceSession {
     const reply = String(result.reply || '').trim();
     if (!reply) throw new Error('Buddy could not form a reply. Please try again.');
     this.onTranscript(reply);
+    this.onVisualHint?.(result.visualHint);
     this.onMessage?.('assistant', reply);
     this.history.push({ role: 'assistant', content: reply });
     this.history = this.history.slice(-12);

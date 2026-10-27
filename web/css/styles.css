@@ -236,15 +236,21 @@ button:focus-visible,a:focus-visible {
 .scene p:last-child { font-size: 13px; line-height: 1.5; margin-bottom: 0; }
 .scene-picture { width: 48%; max-width: 420px; align-self: end; overflow: visible; }
 .scene-object { transform-box: fill-box; transform-origin: center; }
-.scene[data-talking="true"] .scene-object { animation: float-picture 3.5s ease-in-out infinite; }
-.scene[data-talking="true"] .scene-object:nth-last-child(2) { animation-delay: -.8s; }
-.scene[data-talking="true"] .scene-object:last-child { animation-delay: -1.7s; }
+.scene[data-talking="true"][data-cue="float"] .scene-object { animation: float-picture 3.5s ease-in-out infinite; }
+.scene[data-talking="true"][data-cue="stomp"] .scene-object[data-slot="2"] { animation: stomp-picture 1.8s ease-in-out infinite; }
+.scene[data-talking="true"][data-cue="drive"] .scene-object[data-slot="2"] { animation: drive-picture 2.8s ease-in-out infinite; }
+.scene[data-talking="true"][data-cue="count"] .scene-object { animation: count-picture 2.7s ease-in-out infinite; }
+.scene[data-talking="true"][data-cue="count"] .scene-object[data-slot="2"] { animation-delay: .35s; }
+.scene[data-talking="true"][data-cue="count"] .scene-object[data-slot="3"] { animation-delay: .7s; }
 .scene[data-scene="space"], .scene[data-scene="space"] .eyebrow { color: #fff3d3; }
 @keyframes blink { 0%,43%,47%,100% { transform: scaleY(1); } 45% { transform: scaleY(.1); } }
 @keyframes nod { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg) translateY(2px); } }
 @keyframes explain { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(12deg); } }
 @keyframes ponder { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-8deg); } }
 @keyframes float-picture { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-9px) rotate(4deg); } }
+@keyframes stomp-picture { 0%,100% { transform: translateY(0) rotate(0); } 42% { transform: translateY(-5px) rotate(-2deg); } 65% { transform: translateY(2px) rotate(2deg); } }
+@keyframes drive-picture { 0%,100% { transform: translateX(0) rotate(0); } 50% { transform: translateX(8px) rotate(1deg); } }
+@keyframes count-picture { 0%,14%,100% { opacity: .76; transform: scale(.94) translateY(2px); } 32%,70% { opacity: 1; transform: scale(1) translateY(-2px); } }
 @media(max-width:700px) {
   .scene { padding: 18px 20px 0; gap: 0; }
   .scene h2 { font-size: 17px; }

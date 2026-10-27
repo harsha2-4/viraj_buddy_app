@@ -7,6 +7,7 @@ import { addConversationMessage, buildHistoryContext, clearConversations, endCon
 import { hasLegacyHistory, migrateLegacyHistory } from '../web/js/history.js';
 import { clearActiveProfileId, createProfile, findProfile, getActiveProfileId, listProfiles, setActiveProfileId, validateProfileName } from '../web/js/profiles.js';
 import { showExperienceScreen } from '../web/js/onboarding.js';
+import { SceneController, sceneForText, validateVisualHint, visualCatalog } from '../web/js/scenes.js';
 
 test('destination accepts authenticated ChatGPT paths and retains query/hash', () => {
   for (const value of ['https://chatgpt.com/g/g-p-123/project', 'https://chatgpt.com/c/123?model=auto#latest', 'https://chat.openai.com/c/123']) {
@@ -151,6 +152,84 @@ test('welcome and onboarding screen transitions expose one focused panel at a ti
   showExperienceScreen('welcome', panels);
   assert.deepEqual(focusCalls, ['newUser', 'existingUser', 'session', 'welcome']);
   assert.throws(() => showExperienceScreen('unknown', panels), RangeError);
+});
+
+test('scene matcher recognizes dinosaur, vehicle, counting, weather, and story topics', () => {
+  assert.equal(sceneForText('Can we meet a T-Rex?'), 'dinosaurs');
+  assert.equal(sceneForText('Let’s take the bus and find a race car.'), 'vehicles');
+  assert.equal(sceneForText('How many stars can we count?'), 'numbers');
+  assert.equal(sceneForText('Let’s count the three stars.'), 'numbers');
+  assert.equal(sceneForText('I see a rainbow after the rain.'), 'weather');
+  assert.equal(sceneForText('Tell me a story about a castle.'), 'stories');
+});
+
+test('scene controller follows user and Buddy text while retaining scenes without a new topic', () => {
+  const originalDocument = globalThis.document;
+  const labels = {
+    'scene-title': { textContent: '' },
+    'scene-caption': { textContent: '' }
+  };
+  const attributes = Array.from({ length: 3 }, () => ({}));
+  const element = {
+    dataset: {},
+    style: { setProperty(name, value) { this[name] = value; } },
+    querySelectorAll() { return attributes.map(value => ({ setAttribute(name, content) { value[name] = content; } })); }
+  };
+  globalThis.document = { getElementById(id) { return labels[id]; } };
+  try {
+    const scene = new SceneController(element);
+    scene.follow('I want to hear a story.');
+    assert.equal(scene.name, 'stories');
+    scene.follow('Let’s imagine a dinosaur exploring a jungle.');
+    assert.equal(scene.name, 'dinosaurs');
+    assert.equal(element.dataset.cue, 'stomp');
+    assert.equal(attributes[1].href, '#art-dinosaur');
+    scene.follow('That sounds funny!');
+    assert.equal(scene.name, 'dinosaurs');
+  } finally {
+    if (originalDocument === undefined) delete globalThis.document;
+    else globalThis.document = originalDocument;
+  }
+});
+
+test('visual hints are allowlisted and invalid hints safely fall back to text or the current scene', () => {
+  const originalDocument = globalThis.document;
+  const labels = { 'scene-title': { textContent: '' }, 'scene-caption': { textContent: '' } };
+  const uses = Array.from({ length: 3 }, () => ({ setAttribute(name, value) { this[name] = value; } }));
+  const element = {
+    dataset: {},
+    style: { setProperty() {} },
+    querySelectorAll() { return uses; }
+  };
+  globalThis.document = { getElementById(id) { return labels[id]; } };
+  try {
+    const scene = new SceneController(element);
+    assert.deepEqual(validateVisualHint({ theme: 'vehicles', cue: 'drive' }), { theme: 'vehicles', cue: 'drive' });
+    assert.equal(scene.follow('No clear topic.', { theme: 'vehicles', cue: 'drive' }), 'vehicles');
+    assert.equal(element.dataset.cue, 'drive');
+    assert.equal(scene.follow('Buddy says let’s count three.', { theme: 'unsafe', cue: 'run-code' }), 'numbers');
+    assert.equal(scene.follow('Nothing new.', { theme: 'vehicles', cue: 'run-code' }), 'numbers');
+    for (const hint of [null, '<svg onload=alert(1)>', [], { theme: '__proto__', cue: 'float' }, { theme: 'dinosaurs', cue: 'drive' }]) {
+      assert.equal(validateVisualHint(hint), null);
+    }
+    assert.ok(Object.keys(visualCatalog).includes(element.dataset.scene));
+    assert.ok(uses.every(use => /^#art-[a-z-]+$/u.test(use.href)));
+  } finally {
+    if (originalDocument === undefined) delete globalThis.document;
+    else globalThis.document = originalDocument;
+  }
+});
+
+test('scene motion cues are gated by speaking and reduced-motion styles', async () => {
+  const [app, styles] = await Promise.all([
+    readFile(new URL('../web/js/app.js', import.meta.url), 'utf8'),
+    readFile(new URL('../web/css/styles.css', import.meta.url), 'utf8')
+  ]);
+  assert.match(app, /state === 'talking' && CONFIG\.enableAnimations/);
+  assert.match(styles, /prefers-reduced-motion:\s*reduce/);
+  assert.match(styles, /data-cue="stomp"/);
+  assert.match(styles, /data-cue="drive"/);
+  assert.match(styles, /data-cue="count"/);
 });
 
 test('recording errors explain microphone denial, missing devices, unsupported browsers, and retry', async () => {

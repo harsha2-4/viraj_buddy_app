@@ -122,7 +122,7 @@
   </main>
   <section id="scene" class="scene" aria-labelledby="scene-title" hidden>
     <div class="scene-copy"><p class="eyebrow">OUR IMAGINATION WINDOW</p><h2 id="scene-title">A world of little wonders</h2><p id="scene-caption">Where shall we go together?</p></div>
-    <svg class="scene-picture" viewBox="0 0 420 150" role="img" aria-label="Illustrated conversation scene">
+    <svg class="scene-picture" viewBox="0 0 420 150" role="img" aria-labelledby="scene-title scene-caption">
       <defs>
         <symbol id="art-sun" viewBox="0 0 100 100"><circle cx="50" cy="50" r="24" fill="#efb64d"/><path d="M50 10V1 M50 99V90 M10 50H1 M99 50H90 M20 20L13 13 M80 80L87 87 M20 80L13 87 M80 20L87 13" stroke="#efb64d" stroke-width="6" stroke-linecap="round"/></symbol>
         <symbol id="art-tree" viewBox="0 0 100 100"><path d="M50 48V94" stroke="#98744d" stroke-width="12"/><path d="M50 7 Q5 20 17 55 Q22 77 50 66 Q81 77 87 49 Q88 16 50 7" fill="#478d6b"/><path d="M50 27V60 M33 42L50 53 L68 36" stroke="#80b589" stroke-width="4" fill="none"/></symbol>
@@ -138,11 +138,18 @@
         <symbol id="art-one" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="90" fill="#ce785c">1</text></symbol>
         <symbol id="art-two" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="90" fill="#528573">2</text></symbol>
         <symbol id="art-three" viewBox="0 0 100 100"><text x="50" y="82" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="90" fill="#9274a4">3</text></symbol>
+        <symbol id="art-traffic-light" viewBox="0 0 100 100"><path d="M47 70H55V100H47Z" fill="#98744d"/><rect x="28" y="4" width="44" height="72" rx="14" fill="#48545a"/><circle cx="50" cy="21" r="8" fill="#e98377"/><circle cx="50" cy="40" r="8" fill="#f3cf70"/><circle cx="50" cy="59" r="8" fill="#84b78a"/></symbol>
+        <symbol id="art-car" viewBox="0 0 120 100"><path d="M16 57L28 34Q31 28 39 28H76Q83 28 89 38L100 56Q111 60 111 71V82H9V69Q9 60 16 57Z" fill="#e8876f"/><path d="M34 38H52V54H25Z M59 38H76Q81 38 85 47L89 54H59Z" fill="#d9eff0"/><circle cx="32" cy="80" r="12" fill="#47545a"/><circle cx="88" cy="80" r="12" fill="#47545a"/><circle cx="32" cy="80" r="5" fill="#f4d28e"/><circle cx="88" cy="80" r="5" fill="#f4d28e"/></symbol>
+        <symbol id="art-road" viewBox="0 0 140 100"><path d="M23 100L48 0H91L117 100Z" fill="#727e82"/><path d="M68 10L64 32H74L71 53H60L56 76H67L64 94" fill="none" stroke="#fff0bd" stroke-width="5" stroke-linecap="round" stroke-dasharray="10 10"/></symbol>
+        <symbol id="art-cloud" viewBox="0 0 120 100"><path d="M24 72Q7 70 10 54Q12 40 27 39Q27 18 48 17Q67 17 74 35Q96 29 104 48Q118 73 91 78H27Z" fill="#fffdf4" stroke="#a9c5d2" stroke-width="4"/></symbol>
+        <symbol id="art-rain" viewBox="0 0 100 100"><path d="M50 10Q25 47 25 62A25 25 0 0 0 75 62Q75 47 50 10Z" fill="#78b8cf"/><path d="M43 61Q44 70 52 73" fill="none" stroke="#d8f0f3" stroke-width="5" stroke-linecap="round"/></symbol>
+        <symbol id="art-book" viewBox="0 0 120 100"><path d="M8 22Q34 13 59 29V87Q34 72 8 81Z" fill="#e98f7c" stroke="#9e655a" stroke-width="4"/><path d="M112 22Q86 13 61 29V87Q86 72 112 81Z" fill="#f3ca70" stroke="#ad8b4e" stroke-width="4"/><path d="M60 29V88" stroke="#fff4d8" stroke-width="5"/><path d="M20 40Q35 37 48 45M20 53Q35 50 48 58M72 45Q87 37 101 40M72 58Q87 50 101 53" fill="none" stroke="#fff4d8" stroke-width="3" stroke-linecap="round"/></symbol>
+        <symbol id="art-castle" viewBox="0 0 120 110"><path d="M15 102V45H29V30H43V45H54V20H68V45H82V30H96V45H108V102Z" fill="#a88db9"/><path d="M49 102V75A13 13 0 0 1 75 75V102Z" fill="#f4d68e"/><path d="M20 30V12L28 19L36 12V30M59 20V2L67 9L75 2V20M89 30V12L97 19L105 12V30" fill="#e98f7c"/></symbol>
       </defs>
       <ellipse cx="215" cy="157" rx="240" ry="42" fill="var(--scene-ground)"/>
-      <svg class="scene-object" x="25" y="22" width="85" height="100"><use href="#art-sun"/></svg>
-      <svg class="scene-object" x="152" y="15" width="106" height="115"><use href="#art-tree"/></svg>
-      <svg class="scene-object" x="300" y="30" width="83" height="100"><use href="#art-flower"/></svg>
+      <svg class="scene-object" data-slot="1" x="25" y="22" width="85" height="100"><use href="#art-sun"/></svg>
+      <svg class="scene-object" data-slot="2" x="152" y="15" width="106" height="115"><use href="#art-tree"/></svg>
+      <svg class="scene-object" data-slot="3" x="300" y="30" width="83" height="100"><use href="#art-flower"/></svg>
     </svg>
   </section>
   <footer><span aria-hidden="true">♡</span> Little moments. Big discoveries.</footer>
