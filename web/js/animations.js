@@ -9,12 +9,12 @@ export class AvatarController {
     };
     this.motionPreference.addEventListener('change', this.updateMotion);
     this.updateMotion();
-    this.setState('idle');
+    this.setState('welcome');
   }
 
   setState(state) {
     const mapped = { transcribing: 'thinking', generating: 'thinking', generatingSpeech: 'thinking' }[state] || state;
-    this.element.dataset.state = ['idle', 'happy', 'connecting', 'listening', 'thinking', 'talking'].includes(mapped) ? mapped : 'idle';
+    this.element.dataset.state = ['idle', 'happy', 'welcome', 'connecting', 'listening', 'thinking', 'talking'].includes(mapped) ? mapped : 'idle';
   }
 
   celebrate() {

@@ -19,10 +19,12 @@ async function useStore(operation, factory) {
   try {
     return await new Promise((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, 'readwrite');
-      const request = operation(transaction.objectStore(STORE_NAME));
-      request.onerror = () => reject(request.error || new Error('Voice profile storage failed.'));
+      let result;
+      const request = operation(transaction.objectStore(STORE_NAME), value => { result = value; });
+      request?.addEventListener('error', () => reject(request.error || new Error('Voice profile storage failed.')));
       transaction.onabort = () => reject(transaction.error || new Error('Voice profile storage failed.'));
-      transaction.oncomplete = () => resolve(request.result);
+      transaction.onerror = () => reject(transaction.error || new Error('Voice profile storage failed.'));
+      transaction.oncomplete = () => resolve(result === undefined ? request?.result : result);
     });
   } finally {
     database.close();
@@ -77,19 +79,21 @@ export function analyzeVoiceFrames(frames, sampleRate) {
   };
 }
 
-export async function saveVoiceProfile(profile, sample, factory = globalThis.indexedDB) {
+export async function saveVoiceProfile(profile, sample, factory = globalThis.indexedDB, profileId = 'child') {
   if (!(sample instanceof Blob) || sample.size === 0) throw new TypeError('A voice sample is required.');
   if (!profile || !['lower', 'middle', 'higher'].includes(profile.pitchBand) ||
       !['soft', 'steady', 'strong'].includes(profile.energy) || typeof profile.profiledAt !== 'string') {
     throw new TypeError('Voice profile data is invalid.');
   }
-  await useStore(store => store.put({ profile, sample }, PROFILE_KEY), factory);
+  if (typeof profileId !== 'string' || !profileId) throw new TypeError('A user profile is required to save voice settings.');
+  await useStore(store => store.put({ profile }, profileId === 'child' ? PROFILE_KEY : profileId), factory);
 }
 
-export async function getVoiceProfile(factory = globalThis.indexedDB) {
-  const record = (await useStore(store => store.get(PROFILE_KEY), factory)) || null;
+export async function getVoiceProfile(factory = globalThis.indexedDB, profileId = 'child') {
+  if (typeof profileId !== 'string' || !profileId) throw new TypeError('A user profile is required to read voice settings.');
+  const record = (await useStore(store => store.get(profileId === 'child' ? PROFILE_KEY : profileId), factory)) || null;
   if (!record) return null;
-  if (!(record.sample instanceof Blob) || !record.profile ||
+  if (!record.profile ||
       !['lower', 'middle', 'higher'].includes(record.profile.pitchBand) ||
       !['soft', 'steady', 'strong'].includes(record.profile.energy) ||
       typeof record.profile.profiledAt !== 'string') {
@@ -98,8 +102,37 @@ export async function getVoiceProfile(factory = globalThis.indexedDB) {
   return record;
 }
 
-export async function clearVoiceProfile(factory = globalThis.indexedDB) {
-  await useStore(store => store.delete(PROFILE_KEY), factory);
+export async function clearVoiceProfile(factory = globalThis.indexedDB, profileId = 'child') {
+  if (typeof profileId !== 'string' || !profileId) throw new TypeError('A user profile is required to delete voice settings.');
+  await useStore(store => store.delete(profileId === 'child' ? PROFILE_KEY : profileId), factory);
+}
+
+export async function migrateLegacyVoiceProfile(profileId, factory = globalThis.indexedDB) {
+  if (typeof profileId !== 'string' || !profileId || profileId === 'child') throw new TypeError('A new user profile is required to restore voice settings.');
+  return useStore((store, setResult) => {
+    const legacy = store.get(PROFILE_KEY);
+    legacy.addEventListener('success', () => {
+      if (!legacy.result?.profile) {
+        setResult(false);
+        return;
+      }
+      const destination = store.get(profileId);
+      destination.addEventListener('success', () => {
+        if (destination.result) {
+          setResult(false);
+          return;
+        }
+        store.put({ profile: legacy.result.profile }, profileId);
+        store.delete(PROFILE_KEY);
+        setResult(true);
+      });
+    });
+    return legacy;
+  }, factory);
+}
+
+export async function hasLegacyVoiceProfile(factory = globalThis.indexedDB) {
+  return Boolean(await getVoiceProfile(factory, 'child'));
 }
 
 export async function recordVoiceProfile({

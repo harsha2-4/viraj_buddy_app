@@ -290,6 +290,60 @@ h1 {
   width: 100%;
 }
 
+.experience-panel form {
+  display: grid;
+  gap: 12px;
+}
+
+.experience-panel form>label:not(.profile-consent) {
+  font-weight: 700;
+  font-size: 15px;
+  text-align: left;
+}
+
+.experience-panel input[type="text"] {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #c4d3c2;
+  border-radius: 14px;
+  background: #fffdf7;
+  color: var(--ink);
+  font: inherit;
+}
+
+.experience-panel input:focus-visible {
+  outline: 3px solid #996325;
+  outline-offset: 3px;
+}
+
+.experience-panel form .action {
+  width: 100%;
+}
+
+.experience-panel .profile-consent {
+  text-align: left;
+  margin: 8px 0;
+}
+
+.experience-panel .profile-actions {
+  display: grid;
+}
+
+.experience-panel .profile-actions button {
+  justify-content: center;
+}
+
+.experience-panel .prompt-line {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.experience-panel .small-button {
+  margin: 12px 8px 0 0;
+}
+
 .action {
   border-radius: 23px;
   min-height: 86px;
@@ -576,6 +630,18 @@ code {
   animation: happy .5s ease-in-out;
 }
 
+.avatar[data-animated="true"][data-state="welcome"] {
+  animation: welcome-bounce 3.2s ease-in-out infinite;
+}
+
+.avatar[data-animated="true"][data-state="welcome"] .boy-arm-right {
+  animation: welcome-wave 1.4s ease-in-out infinite;
+}
+
+.avatar[data-animated="true"][data-state="welcome"] .boy-head {
+  animation: welcome-nod 3.2s ease-in-out infinite;
+}
+
 .avatar-area:has([data-animated="true"]) .orbit-one {
   animation: sparkle 5s ease-in-out infinite;
 }
@@ -599,6 +665,21 @@ code {
   70% {
     transform: translateY(-7px) rotate(4deg);
   }
+}
+
+@keyframes welcome-bounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes welcome-wave {
+  0%,100% { transform: rotate(-3deg); }
+  50% { transform: rotate(9deg); }
+}
+
+@keyframes welcome-nod {
+  0%,100% { transform: rotate(0); }
+  50% { transform: rotate(3deg); }
 }
 
 @keyframes sparkle {
@@ -667,6 +748,51 @@ code {
   }
   .welcome {
     text-align: center;
+  }
+  .experience-panel {
+    width: 100%;
+  }
+  .experience-panel form {
+    text-align: left;
+  }
+  .experience-panel form>label:not(.profile-consent) {
+    display: block;
+    margin: 14px 0 7px;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: left;
+  }
+  .experience-panel input[type="text"] {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 1px solid #c4d3c2;
+    border-radius: 14px;
+    background: #fffdf7;
+    color: var(--ink);
+    font: inherit;
+  }
+  .experience-panel input:focus-visible {
+    outline: 3px solid #996325;
+    outline-offset: 3px;
+  }
+  .experience-panel .profile-consent {
+    margin: 16px 0;
+    text-align: left;
+  }
+  .experience-panel .profile-actions {
+    display: grid;
+  }
+  .experience-panel .profile-actions button {
+    justify-content: center;
+  }
+  .experience-panel .prompt-line {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .experience-panel .small-button {
+    margin-top: 12px;
   }
   .eyebrow {
     font-size: 8px;

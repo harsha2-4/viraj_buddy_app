@@ -4,6 +4,9 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { getChatGptDestination } from '../web/js/navigation.js';
 import { addConversationMessage, buildHistoryContext, clearConversations, endConversation, listConversations, startConversation } from '../web/js/history.js';
+import { hasLegacyHistory, migrateLegacyHistory } from '../web/js/history.js';
+import { createProfile, findProfile, listProfiles, validateProfileName } from '../web/js/profiles.js';
+import { showExperienceScreen } from '../web/js/onboarding.js';
 
 test('destination accepts authenticated ChatGPT paths and retains query/hash', () => {
   for (const value of ['https://chatgpt.com/g/g-p-123/project', 'https://chatgpt.com/c/123?model=auto#latest', 'https://chat.openai.com/c/123']) {
@@ -56,6 +59,93 @@ test('history context is bounded and malformed saved records fail explicitly', (
   assert.throws(() => listConversations(storage), SyntaxError);
 });
 
+test('profile names are trimmed, required, and looked up case-insensitively without overwriting duplicates', () => {
+  const values = new Map();
+  const storage = {
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { values.set(key, value); },
+    removeItem(key) { values.delete(key); }
+  };
+  assert.throws(() => validateProfileName('  \t '), /Enter a name/);
+  assert.equal(validateProfileName('  Sam   Lee  '), 'Sam Lee');
+  const profile = createProfile('  Sam   Lee ', storage, new Date('2026-01-01T10:00:00Z'), 'sam-id');
+  assert.equal(findProfile('sAM lEe', storage).id, profile.id);
+  assert.throws(() => createProfile('SAM LEE', storage, new Date(), 'other-id'), error => error.code === 'PROFILE_EXISTS' && error.profile.id === 'sam-id');
+  assert.deepEqual(listProfiles(storage), [profile]);
+});
+
+test('conversation history is isolated per profile', () => {
+  const values = new Map();
+  const storage = {
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { values.set(key, value); },
+    removeItem(key) { values.delete(key); }
+  };
+  const first = startConversation(storage, new Date('2026-01-01T10:00:00Z'), 'first', 'user-a');
+  addConversationMessage(first, 'user', 'A private first-user topic.', storage, new Date(), 'user-a');
+  const second = startConversation(storage, new Date('2026-01-02T10:00:00Z'), 'second', 'user-b');
+  addConversationMessage(second, 'user', 'A different second-user topic.', storage, new Date(), 'user-b');
+  assert.equal(listConversations(storage, 'user-a')[0].messages[0].text, 'A private first-user topic.');
+  assert.equal(listConversations(storage, 'user-b')[0].messages[0].text, 'A different second-user topic.');
+  clearConversations(storage, 'user-a');
+  assert.deepEqual(listConversations(storage, 'user-a'), []);
+  assert.equal(listConversations(storage, 'user-b').length, 1);
+});
+
+test('legacy history stays unassigned until explicit restore and is never overwritten', () => {
+  const values = new Map();
+  const storage = {
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { values.set(key, value); },
+    removeItem(key) { values.delete(key); }
+  };
+  const id = startConversation(storage, new Date('2026-01-01T10:00:00Z'), 'legacy');
+  addConversationMessage(id, 'user', 'Old conversation.', storage);
+  assert.equal(hasLegacyHistory(storage), true);
+  assert.equal(listConversations(storage, 'new-user').length, 0);
+  assert.deepEqual(migrateLegacyHistory('new-user', storage), { migrated: true, conversations: 1 });
+  assert.equal(listConversations(storage, 'new-user')[0].messages[0].text, 'Old conversation.');
+  assert.equal(hasLegacyHistory(storage), false);
+
+  const existingId = startConversation(storage, new Date('2026-02-01T10:00:00Z'), 'legacy-two');
+  addConversationMessage(existingId, 'user', 'Do not overwrite.', storage);
+  startConversation(storage, new Date('2026-03-01T10:00:00Z'), 'existing', 'existing-user');
+  assert.deepEqual(migrateLegacyHistory('existing-user', storage), { migrated: false, conversations: 0 });
+  assert.equal(hasLegacyHistory(storage), true);
+  assert.equal(listConversations(storage, 'existing-user').length, 1);
+});
+
+test('welcome and onboarding screen transitions expose one focused panel at a time', () => {
+  const focusCalls = [];
+  const panels = Object.fromEntries(['welcome', 'newUser', 'existingUser', 'session'].map(name => [name, {
+    hidden: true,
+    querySelector(selector) {
+      assert.equal(selector, 'input, button, h1');
+      return { focus() { focusCalls.push(name); } };
+    }
+  }]));
+  showExperienceScreen('newUser', panels);
+  assert.deepEqual(Object.fromEntries(Object.entries(panels).map(([name, panel]) => [name, panel.hidden])), {
+    welcome: true, newUser: false, existingUser: true, session: true
+  });
+  showExperienceScreen('existingUser', panels);
+  assert.equal(panels.newUser.hidden, true);
+  assert.equal(panels.existingUser.hidden, false);
+  showExperienceScreen('session', panels);
+  assert.equal(panels.session.hidden, false);
+  showExperienceScreen('welcome', panels);
+  assert.deepEqual(focusCalls, ['newUser', 'existingUser', 'session', 'welcome']);
+  assert.throws(() => showExperienceScreen('unknown', panels), RangeError);
+});
+
+test('recording errors explain microphone denial, missing devices, unsupported browsers, and retry', async () => {
+  const { recordingFailureMessage } = await import('../web/js/onboarding.js');
+  assert.match(recordingFailureMessage({ name: 'NotAllowedError' }), /denied.*retry/i);
+  assert.match(recordingFailureMessage({ name: 'NotFoundError' }), /No microphone/);
+  assert.match(recordingFailureMessage(new Error('Voice profiling needs a supported browser using HTTPS or localhost.')), /secure connection/);
+  assert.match(recordingFailureMessage(new Error('I could not hear a clear voice sample. Try again somewhere quiet.')), /Try again somewhere quiet/);
+});
+
 async function workerHarness() {
   const source = await readFile(new URL('../web/service-worker.js', import.meta.url), 'utf8');
   const listeners = {};
@@ -103,8 +193,10 @@ async function workerHarness() {
 test('worker precaches only own repository path and cleans only its own old cache', async () => {
   const worker = await workerHarness();
   await worker.lifecycle('install');
-  assert.equal(worker.stored.size, 18);
+  assert.equal(worker.stored.size, 20);
   assert.ok([...worker.stored.keys()].some(url => url.endsWith('/js/audioConfig.js')));
+  assert.ok([...worker.stored.keys()].some(url => url.endsWith('/js/profiles.js')));
+  assert.ok([...worker.stored.keys()].some(url => url.endsWith('/js/onboarding.js')));
   assert.ok([...worker.stored.keys()].some(url => url.endsWith('/js/voiceProfile.js')));
   assert.ok([...worker.stored.keys()].some(url => url.endsWith('/js/wakeLock.js')));
   for (const url of worker.stored.keys()) assert.ok(url.startsWith(worker.scope));

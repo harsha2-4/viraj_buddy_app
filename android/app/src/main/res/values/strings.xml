@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Viraj AI Buddy</string>
-    <string name="greeting">Hi Viraj! 👋</string>
+    <string name="app_name">AI Buddy</string>
+    <string name="greeting">Welcome to AI Buddy! 👋</string>
     <string name="subtitle">Ready for an adventure?</string>
     <string name="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</string>
     <string name="talk">🎙️ Talk to Buddy</string>

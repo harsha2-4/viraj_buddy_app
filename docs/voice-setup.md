@@ -52,7 +52,7 @@ TTS rates. Orpheus English defaults to $22 per million characters. The estimate
 resets at UTC midnight and on server restart; configure provider-side
 spend limits as well.
 
-## Prompt, history and privacy
+## Prompt, profiles, history and privacy
 
 `server/master-prompt.md` is the authoritative personality and safety prompt.
 The backend loads the full UTF-8 content without trimming and sends it as the
@@ -60,19 +60,21 @@ first LLM `system` message on every reply. A second server-generated system
 message may contain the profile's validated rough pitch and voice-level bands;
 arbitrary client profile text is never sent as instructions.
 `server/master-prompt.sha256` contains the current prompt hash. `npm test`
-checks its byte-for-byte integrity. Session history is stored in this device's
-local storage; at most 12 recent messages are sent with a turn. The server does
+checks its byte-for-byte integrity. Named profiles, separate conversation
+histories, and derived voice settings are stored on this device. At most 12
+recent messages from the active profile are sent with a turn. The server does
 not persist audio, transcripts or replies, but Groq receives submitted live
 audio, text and the rough profile categories.
 
-Before the first voice session, a parent or guardian must approve recording a
-short sample answering three simple prompts. The raw enrollment recording and
-derived profile remain in this browser's IndexedDB until **Parents → Delete
-voice profile** is used. The recording itself is never uploaded. The profile
-contains only coarse pitch and voice-level bands; it is a rough acoustic hint,
-not speaker identification or authentication, and it cannot filter out other
-speakers. The live conversation microphone path still sends detected speech to
-Groq for transcription.
+Creating each profile requires a parent or guardian to approve recording a
+short prompted line before the browser asks for microphone access. The sample
+is analyzed on-device and discarded; only coarse pitch and voice-level bands
+are stored under that profile in IndexedDB. These settings are a rough acoustic
+hint, not speaker identification or authentication, and cannot filter speakers.
+The live conversation microphone path still sends detected speech to Groq for
+transcription. Existing data from older installations remains unassigned until
+the user explicitly chooses **Existing user → Restore previous on-device data**
+and enters a name.
 
 The voice API has no app access-code gate. API origin validation, a per-IP
 in-memory rate limit, an audio upload cap and the estimated daily limit provide

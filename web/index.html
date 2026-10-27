@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f8f5ee">
-  <meta name="description" content="A little launchpad for big adventures. Viraj AI Buddy, with a grown-up by your side.">
+  <meta name="description" content="A little launchpad for big adventures with AI Buddy.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Viraj Buddy">
+  <meta name="apple-mobile-web-app-title" content="AI Buddy">
   <meta name="referrer" content="no-referrer">
-  <title>Viraj AI Buddy</title>
+  <title>AI Buddy</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./assets/icons/icon-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
@@ -18,8 +18,9 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Viraj AI Buddy home"><span class="brand-mark" aria-hidden="true">✦</span><span>viraj<span class="brand-light"> / ai buddy</span></span></a>
+    <a class="brand" href="./" aria-label="AI Buddy home"><span class="brand-mark" aria-hidden="true">✦</span><span>AI Buddy</span></a>
     <button id="parent-button" class="parent-button" type="button" aria-label="Open parent settings" aria-haspopup="dialog"><span aria-hidden="true">⚙</span><span>Parents</span></button>
+    <button id="switch-user-button" class="parent-button" type="button" hidden>Switch user</button>
   </header>
   <main class="launchpad">
     <section class="avatar-area" aria-label="Your friendly Buddy">
@@ -28,7 +29,7 @@
       <span class="little-dot" aria-hidden="true"></span>
       <div class="avatar-halo" aria-hidden="true"></div>
       <div id="avatar" class="avatar" data-state="idle">
-        <svg viewBox="0 0 320 360" role="img" aria-label="Buddy, a smiling boy with brown hair and a green explorer shirt">
+        <svg viewBox="0 0 320 360" role="img" aria-label="A smiling child character welcoming you to AI Buddy">
           <g class="boy-body">
             <path d="M121 278 L117 334 Q131 345 148 334 L155 284 M170 284 L177 334 Q193 345 205 333 L199 275" fill="#36566c"/>
             <path d="M114 328 Q129 324 149 333 L149 344 L109 344 Q103 337 114 328 M177 332 Q196 322 207 332 L214 344 L176 344Z" fill="#f5bd5c"/>
@@ -55,24 +56,71 @@
       <span class="avatar-shadow" aria-hidden="true"></span>
       <div class="buddy-label"><span aria-hidden="true"></span><span id="buddy-state">Your AI adventure buddy</span><span class="voice-bars" aria-hidden="true">▂ ▅ ▃ ▆</span></div>
     </section>
-    <section class="welcome" aria-labelledby="greeting">
-      <p class="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</p>
-      <h1 id="greeting">Hi Viraj! <span class="hello-wave" aria-hidden="true">👋</span></h1>
-      <p class="subtitle">Ready for an adventure?</p>
-      <div class="actions">
+    <section class="welcome">
+      <section id="welcome-screen" class="experience-panel" aria-labelledby="welcome-heading">
+        <p class="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</p>
+        <h1 id="welcome-heading">Welcome to AI Buddy! <span class="hello-wave" aria-hidden="true">👋</span></h1>
+        <p class="subtitle">Your friendly adventure buddy is ready. Choose how to begin.</p>
+        <div class="actions">
+          <button id="new-user-button" class="action action-primary" type="button"><span class="action-icon" aria-hidden="true">✨</span><span>New user</span><span class="arrow" aria-hidden="true">→</span></button>
+          <button id="existing-user-button" class="action action-secondary" type="button"><span class="action-icon" aria-hidden="true">🌟</span><span>Existing user</span><span class="arrow" aria-hidden="true">→</span></button>
+        </div>
+        <p id="welcome-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+      <section id="new-user-screen" class="experience-panel" aria-labelledby="new-user-heading" hidden>
+        <p class="eyebrow">LET’S MAKE YOUR PROFILE</p>
+        <h1 id="new-user-heading">A new adventure!</h1>
+        <form id="new-user-form" novalidate>
+          <label for="new-user-name">What is your name?</label>
+          <input id="new-user-name" name="name" type="text" autocomplete="given-name" maxlength="60" required>
+          <p class="prompt-line">When your grown-up is ready, say: <strong>“I love exploring and learning new things with AI Buddy!”</strong></p>
+          <label class="profile-consent">
+            <input id="new-user-consent" type="checkbox">
+            <span>I am this user’s parent or guardian. I agree to record a short sample for on-device analysis and save its rough voice settings on this device.</span>
+          </label>
+          <div class="profile-actions">
+            <button id="record-new-user" class="action action-primary" type="button">Record my voice</button>
+            <button id="cancel-new-user-recording" type="button" hidden>Cancel recording</button>
+            <button id="save-new-user" class="action action-secondary" type="submit" disabled>Save profile</button>
+          </div>
+        </form>
+        <p id="new-user-status" class="status" role="status" aria-live="polite" aria-atomic="true">Your sample is analyzed on this device and discarded. Its rough pitch and voice-level settings stay here; they do not identify or authenticate anyone.</p>
+        <button id="open-duplicate-user" class="small-button" type="button" hidden>Open existing profile</button>
+        <button class="back-to-welcome small-button" type="button">Back</button>
+      </section>
+      <section id="existing-user-screen" class="experience-panel" aria-labelledby="existing-user-heading" hidden>
+        <p class="eyebrow">WELCOME BACK</p>
+        <h1 id="existing-user-heading">Find your profile</h1>
+        <form id="existing-user-form" novalidate>
+          <label for="existing-user-name">Enter your name</label>
+          <input id="existing-user-name" name="name" type="text" autocomplete="given-name" list="saved-users" maxlength="60" required>
+          <datalist id="saved-users"></datalist>
+          <button class="action action-primary" type="submit">Open my profile</button>
+        </form>
+        <p id="existing-user-status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button id="open-existing-user" class="small-button" type="button" hidden>Open saved profile</button>
+        <button id="restore-legacy-user" class="small-button" type="button" hidden>Restore previous on-device data for this name</button>
+        <button class="back-to-welcome small-button" type="button">Back</button>
+      </section>
+      <section id="session-screen" class="experience-panel" aria-labelledby="greeting" hidden>
+        <p class="eyebrow">A LITTLE HELLO. A BIG ADVENTURE.</p>
+        <h1 id="greeting">Hi there! <span class="hello-wave" aria-hidden="true">👋</span></h1>
+        <p class="subtitle">Ready for an adventure?</p>
+        <div class="actions">
         <button id="talk-button" class="action action-primary" type="button" aria-label="Talk to Buddy"><span class="action-icon" aria-hidden="true">🎙️</span><span>Talk to Buddy</span><span class="arrow" aria-hidden="true">→</span></button>
         <div id="voice-controls" class="voice-controls" hidden><button id="mute-button" type="button" aria-pressed="false">Mute microphone</button><button id="end-button" type="button">End conversation</button></div>
         <button id="enable-audio" type="button" class="small-button" hidden>Tap to hear Buddy</button>
         <button id="photo-button" class="action action-secondary" type="button" aria-label="Show Buddy Something — open ChatGPT"><span class="action-icon" aria-hidden="true">📷</span><span>Show Buddy Something</span></button>
-      </div>
+        </div>
       <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true">What should we talk about today?</p>
       <p id="history-warning" class="history-warning" role="status" hidden></p>
       <p id="transcript" class="transcript" hidden></p>
       <p class="voice-note">An AI voice, a little imagination, and a grown-up by your side.</p>
+      </section>
       <noscript><p>Please ask a grown-up to enable JavaScript to open Buddy.</p></noscript>
     </section>
   </main>
-  <section id="scene" class="scene" aria-labelledby="scene-title">
+  <section id="scene" class="scene" aria-labelledby="scene-title" hidden>
     <div class="scene-copy"><p class="eyebrow">OUR IMAGINATION WINDOW</p><h2 id="scene-title">A world of little wonders</h2><p id="scene-caption">Where shall we go together?</p></div>
     <svg class="scene-picture" viewBox="0 0 420 150" role="img" aria-label="Illustrated conversation scene">
       <defs>
@@ -101,7 +149,7 @@
   <dialog id="parent-dialog" aria-labelledby="settings-title" aria-describedby="settings-description">
     <div class="dialog-content">
       <p class="eyebrow">FOR GROWN-UPS</p>
-      <h2 id="settings-title">Viraj AI Buddy</h2>
+      <h2 id="settings-title">AI Buddy</h2>
       <p>Version 0.3 · Groq powered voice adventures</p>
       <p>Voice uses Groq for speech recognition, conversation and spoken replies. Microphone audio is sent only after local speech detection. Stay with your child during the activity. Ending the conversation turns off the microphone.</p>
       <section class="screen-settings" aria-labelledby="voice-access-heading">
@@ -111,19 +159,19 @@
         <p id="voice-usage-status" role="status">Daily usage appears after voice setup is checked.</p>
       </section>
       <section class="screen-settings" aria-labelledby="voice-profile-heading">
-        <h3 id="voice-profile-heading">Child voice profile</h3>
-        <p>Before the first voice adventure, a grown-up can record a short sample while the child answers the prompts below. The raw sample stays in this browser and is not uploaded. A rough pitch/voice-level summary is sent to Groq with replies to help Buddy adjust its wording. Live conversation audio is also sent to Groq for transcription. This profile cannot identify a speaker or filter out other voices.</p>
-        <p>During the recording, ask these one at a time: “Which animal would you pick for a story?” “Would you explore in a rocket, car, or submarine?” “What is one fun thing you like talking about?”</p>
+        <h3 id="voice-profile-heading">Voice profile for <span id="settings-user-name">your selected user</span></h3>
+        <p>The short sample is analyzed on this device, then discarded. Only rough pitch and voice-level settings are saved here and shared with Groq during replies. These settings cannot identify, authenticate, or filter speakers. Live conversation audio is sent to Groq for transcription.</p>
+        <p>During the recording, ask the active user to say: “I love exploring and learning new things with AI Buddy!”</p>
         <label class="profile-consent">
           <input id="voice-profile-consent" type="checkbox">
-          <span>I am the child’s parent or guardian, and I agree to save this raw voice sample on this device and share its rough pitch/voice-level summary with Groq until the profile is deleted here.</span>
+          <span>I am the user’s parent or guardian, and I agree to record a short sample for on-device analysis and save its rough voice settings on this device.</span>
         </label>
         <div class="profile-actions">
           <button id="create-voice-profile" type="button">Record voice profile</button>
           <button id="cancel-voice-profile" type="button" hidden>Cancel recording</button>
           <button id="delete-voice-profile" type="button" class="history-clear" hidden>Delete voice profile</button>
         </div>
-        <p id="voice-profile-status" role="status">No voice profile is saved on this device.</p>
+        <p id="voice-profile-status" role="status" aria-live="polite">No voice profile is saved for this user.</p>
       </section>
       <p id="settings-description">Configured ChatGPT destination: <strong id="destination-status">Not Configured</strong></p>
       <p id="setup-help">Set <code>chatgptUrl</code> in <code>web/js/config.js</code> to your ChatGPT project or conversation URL.</p>
@@ -138,7 +186,7 @@
       </section>
       <section class="history-panel" aria-labelledby="history-heading">
         <h3 id="history-heading">Conversation history</h3>
-        <p id="history-status" role="status">History is saved on this device only.</p>
+        <p id="history-status" role="status">Choose a user to view their history.</p>
         <p id="conversation-memory-status">Recent history helps Buddy continue the conversation.</p>
         <div id="history-list"></div>
         <button id="clear-history" class="history-clear" type="button">Clear conversation history</button>

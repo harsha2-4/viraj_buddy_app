@@ -37,7 +37,7 @@ Studio's generated `local.properties` (ignored by Git).
    the APK. Some older Fire releases use a single unknown-sources switch.
 4. Open the APK with that source and tap **Install**. Afterwards, turn off the
    unknown-source permission again if it is no longer needed.
-5. Launch **Viraj AI Buddy**. Move its icon to a prominent place on the Home screen
+5. Launch **AI Buddy**. Move its icon to a prominent place on the Home screen
    using the tablet's normal icon arrangement controls.
 6. Tap **Talk to Buddy** and allow microphone access; no server access code is
    required. Keep the app in the foreground during the activity.

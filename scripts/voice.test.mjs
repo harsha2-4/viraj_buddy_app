@@ -6,7 +6,7 @@ import { createBuddyServer } from '../server/index.mjs';
 import { GROQ_MODELS, loadGroqConfig } from '../server/groq-config.mjs';
 import { audioConfig, chooseRecordingType, splitConversationalSpeech, splitSpeechText } from '../web/js/audioConfig.js';
 import { VoiceSession } from '../web/js/voice.js';
-import { analyzeVoiceFrames } from '../web/js/voiceProfile.js';
+import { analyzeVoiceFrames, clearVoiceProfile, getVoiceProfile, migrateLegacyVoiceProfile, recordVoiceProfile, saveVoiceProfile } from '../web/js/voiceProfile.js';
 
 const promptUrl = new URL('../server/master-prompt.md', import.meta.url);
 const baselineUrl = new URL('../server/master-prompt.sha256', import.meta.url);
@@ -64,6 +64,130 @@ test('voice profiling derives broad pitch and energy bands without retaining tra
   assert.equal(profile.energy, 'steady');
   assert.equal(typeof profile.profiledAt, 'string');
   assert.throws(() => analyzeVoiceFrames([], sampleRate), /clear voice sample/);
+});
+
+function indexedDbHarness() {
+  const values = new Map();
+  const database = {
+    createObjectStore() {},
+    close() {},
+    transaction() {
+      let pending = 0;
+      let completed = false;
+      const transaction = {};
+      const finish = () => {
+        if (completed || pending) return;
+        queueMicrotask(() => {
+          if (completed || pending) return;
+          completed = true;
+          transaction.oncomplete?.();
+        });
+      };
+      const request = (work) => {
+        const listeners = {};
+        const result = {
+          result: undefined,
+          addEventListener(name, handler) { (listeners[name] ||= []).push(handler); }
+        };
+        pending++;
+        queueMicrotask(() => {
+          try {
+            result.result = work();
+            for (const handler of listeners.success || []) handler();
+            result.onsuccess?.();
+          } catch (error) {
+            result.error = error;
+            transaction.error = error;
+            transaction.onerror?.();
+            transaction.onabort?.();
+          } finally {
+            pending--;
+            finish();
+          }
+        });
+        return result;
+      };
+      transaction.objectStore = () => ({
+        get: key => request(() => values.get(key)),
+        put: (value, key) => request(() => { values.set(key, value); return key; }),
+        delete: key => request(() => values.delete(key))
+      });
+      return transaction;
+    }
+  };
+  const factory = {
+    open() {
+      const request = {};
+      queueMicrotask(() => {
+        request.result = database;
+        request.onupgradeneeded?.();
+        request.onsuccess?.();
+      });
+      return request;
+    }
+  };
+  return factory;
+}
+
+test('voice settings and legacy migration stay isolated by profile and discard raw samples', async () => {
+  const factory = indexedDbHarness();
+  const sample = new Blob(['sample audio']);
+  const firstProfile = { pitchBand: 'lower', energy: 'soft', profiledAt: '2026-01-01T00:00:00Z' };
+  const secondProfile = { pitchBand: 'higher', energy: 'strong', profiledAt: '2026-01-02T00:00:00Z' };
+  await saveVoiceProfile(firstProfile, sample, factory, 'user-a');
+  await saveVoiceProfile(secondProfile, sample, factory, 'user-b');
+  assert.deepEqual((await getVoiceProfile(factory, 'user-a')).profile, firstProfile);
+  assert.deepEqual((await getVoiceProfile(factory, 'user-b')).profile, secondProfile);
+  assert.equal((await getVoiceProfile(factory, 'user-a')).sample, undefined);
+  await saveVoiceProfile(firstProfile, sample, factory);
+  assert.equal(await migrateLegacyVoiceProfile('restored-user', factory), true);
+  assert.deepEqual((await getVoiceProfile(factory, 'restored-user')).profile, firstProfile);
+  assert.equal(await getVoiceProfile(factory), null);
+  await clearVoiceProfile(factory, 'user-a');
+  assert.equal(await getVoiceProfile(factory, 'user-a'), null);
+  assert.deepEqual((await getVoiceProfile(factory, 'user-b')).profile, secondProfile);
+});
+
+test('voice recording reports unsupported browsers, permission denial, empty samples, and unclear audio', async () => {
+  await assert.rejects(recordVoiceProfile({
+    mediaDevices: { getUserMedia: async () => { throw new Error('must not request microphone'); } },
+    MediaRecorderImpl: null,
+    AudioContextImpl: null
+  }), /supported browser/);
+
+  class FakeRecorder {
+    static isTypeSupported() { return false; }
+    constructor() { this.mimeType = 'audio/webm'; this.state = 'inactive'; }
+    start() { this.state = 'recording'; }
+    stop() { this.state = 'inactive'; this.onstop?.(); }
+  }
+  class FakeAudioContext {
+    sampleRate = 48000;
+    async resume() {}
+    async close() {}
+    createAnalyser() { return { fftSize: 64, getFloatTimeDomainData(data) { data.fill(0); } }; }
+    createMediaStreamSource() { return { connect() {} }; }
+  }
+  await assert.rejects(recordVoiceProfile({
+    mediaDevices: { getUserMedia: async () => { throw Object.assign(new Error('Denied'), { name: 'NotAllowedError' }); } },
+    MediaRecorderImpl: FakeRecorder,
+    AudioContextImpl: FakeAudioContext
+  }), error => error.name === 'NotAllowedError');
+
+  const mediaDevices = { async getUserMedia() { return { getTracks: () => [{ stop() {} }] }; } };
+  await assert.rejects(recordVoiceProfile({
+    durationMs: 1, mediaDevices, MediaRecorderImpl: FakeRecorder, AudioContextImpl: FakeAudioContext
+  }), /sample was empty/);
+
+  class RecordedAudio extends FakeRecorder {
+    stop() {
+      this.ondataavailable?.({ data: new Blob(['audio']) });
+      super.stop();
+    }
+  }
+  await assert.rejects(recordVoiceProfile({
+    durationMs: 1, mediaDevices, MediaRecorderImpl: RecordedAudio, AudioContextImpl: FakeAudioContext
+  }), /clear voice sample/);
 });
 
 test('spoken replies remove visual markup and emojis and preserve natural sentence pauses', () => {

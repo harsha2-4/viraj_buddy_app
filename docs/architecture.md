@@ -4,7 +4,7 @@
 
 ```text
 iPhone Safari/PWA or Fire Android wrapper
-  → web assets, localStorage history, and parent-approved voice profile in IndexedDB
+  → named local profiles, per-user localStorage history and derived voice settings in IndexedDB
   → local MediaRecorder segmentation and VAD
   → same-origin Node API
   → Groq STT → Groq LLM + exact master prompt → Groq WAV TTS
@@ -20,8 +20,9 @@ exact `BUDDY_ORIGIN`; rate and usage counters are in memory.
 The server reads its complete contents as UTF-8 and places them in the first
 `system` message. A second server-generated system message may carry only the
 validated pitch and voice-level categories from the profile; arbitrary client
-text is never used for that message. The raw enrollment sample stays in browser
-IndexedDB and is never uploaded. The recorded SHA-256 in
+text is never used for that message. Enrollment samples are analyzed on-device,
+discarded, and never uploaded. The derived profile stays in browser IndexedDB.
+The recorded SHA-256 in
 `server/master-prompt.sha256` is checked by the tests. Prior turns are bounded
 user/assistant messages from browser local storage; they cannot replace the
 system prompt.
@@ -33,11 +34,18 @@ The mic is disabled during reply generation/playback to prevent feedback. TTS
 responses longer than 200 characters are divided at punctuation/word boundaries
 and played in order. Device/browser suspension can stop foreground microphone use.
 
-`web/js/animations.js` maps voice states to the existing animated character.
+`web/js/profiles.js` validates and stores named local profiles. Each profile ID
+namespaces conversation history and its rough voice settings; selecting a
+different profile cannot share the previous profile's history or voice hints.
+The first-run welcome flow requires an explicit user choice. Existing legacy
+single-user history and voice data stay unassigned until a user chooses the
+restore action and provides a name. Enrollment audio is analyzed locally and
+discarded; only coarse derived pitch and energy bands are stored and sent.
+
+`web/js/animations.js` maps welcome and voice states to the existing animated character.
 `web/js/scenes.js` selects local illustrations from conversation text. `history.js`
-stores up to 50 conversations in local storage and shares a maximum of 12 recent
-messages with the API on a new turn. The child profile's raw sample remains in
-IndexedDB until explicitly deleted. A profile is not speaker identification,
+stores up to 50 conversations per local profile and shares a maximum of 12 recent
+messages with the API on a new turn. A voice profile is not speaker identification,
 authentication, or voice filtering.
 
 ## Launcher and photo path

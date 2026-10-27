@@ -1,9 +1,25 @@
-# Viraj AI Buddy
+# AI Buddy
 
-Viraj AI Buddy is a voice conversation PWA with an animated character, topic
+AI Buddy is a multi-user voice conversation PWA with an animated character, topic
 illustrations, on-device conversation history, parent settings, and a separate
 ChatGPT photo launcher. The voice backend is a small Node.js server. Browser
 audio is segmented locally and sent to Groq only after speech is detected.
+
+## Profiles and first use
+
+The welcome screen lets each person create a named local profile or reopen an
+existing profile on that device. Conversation history and derived voice settings
+are kept separately for each profile. The app does not set a default person's
+name. If an older installation has unassigned single-user data, choose
+**Existing user**, enter a name, and explicitly select **Restore previous
+on-device data** to attach it. Nothing is assigned automatically.
+
+Creating a profile requires a parent or guardian to consent before the browser
+requests microphone access. A short prompted line is analyzed on-device and the
+recording is discarded; only rough pitch and voice-level categories are stored
+locally and sent with voice replies. These categories cannot identify or
+authenticate a speaker. Live conversation audio is still sent to Groq for
+transcription.
 
 ## Voice architecture
 
@@ -32,7 +48,7 @@ configure a host-level spend limit as well as the local estimated daily guard.
 The server reads the file as UTF-8 without trimming it and sends those exact
 contents as the LLM system message. Its current SHA-256 is recorded in
 `server/master-prompt.sha256`; `npm test` fails if any prompt byte changes. The
-hash was updated with this authorized child-voice prompt change.
+hash is updated whenever approved conversation guidance changes.
 
 ## Setup and run
 
@@ -45,13 +61,8 @@ Copy-Item .env.example .env
 npm start
 ```
 
-Open `http://localhost:8080`, choose **Talk to Buddy**, and allow microphone
-access. Before the first voice adventure, **Parents** asks a grown-up to approve
-and record a short child voice sample. The raw sample and derived profile are
-kept in browser IndexedDB until deleted in Parents settings. Only rough pitch
-and voice-level categories accompany reply requests to Groq; the raw sample is
-never uploaded. Live conversation recordings are still sent to Groq for
-transcription. The profile cannot identify a speaker or filter other voices.
+Open `http://localhost:8080`, choose **New user**, and follow the profile steps.
+Existing users can choose **Existing user** and enter their saved name.
 In **Parents**, **Check voice setup** calls Groq's models API to confirm
 the configured account exposes all three model IDs. Local development works on
 localhost; phones and PWAs need the hosted service over HTTPS.
@@ -119,15 +130,14 @@ and [Fire tablet installation](docs/fire-tablet-installation.md).
 
 ## Privacy and limitations
 
-The app does not persist raw conversation audio on its server. The short
-enrollment sample is intentionally saved in browser IndexedDB on that device
-until removed with **Parents → Delete voice profile**. Its approximate pitch
-and voice-level categories accompany reply requests to Groq; live conversation
-audio is sent to Groq for transcription, and transcripts/replies are saved in
-browser local storage and sent as bounded recent history. Enrollment does not
-identify speakers, authenticate the child, or filter out other voices. A parent
-should stay with the child and remove the saved profile when it is no longer
-needed. Rate and spend counters are in memory and reset when the server
+The app does not persist raw conversation audio on its server. Enrollment
+samples are analyzed on-device and discarded; only rough pitch and voice-level
+categories are saved locally per profile and accompany reply requests to Groq.
+Live conversation audio is sent to Groq for transcription, and transcripts and
+replies are saved in that profile's browser local storage and sent as bounded
+recent history. Voice settings do not identify or authenticate a speaker or
+filter other voices. A parent should stay with the child during use. Rate and
+spend counters are in memory and reset when the server
 restarts. HTTPS, host-level authentication/rate controls and provider billing
 limits are needed for a public deployment. Browser microphone access cannot
 continue while an iPhone is locked or the browser suspends the page. No actual

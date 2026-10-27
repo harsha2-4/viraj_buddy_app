@@ -3,14 +3,18 @@ const MAX_CONVERSATIONS = 50;
 const MAX_CONTEXT_MESSAGES = 12;
 const MAX_CONTEXT_CHARACTERS = 2000;
 
+function storageKey(userId) {
+  return userId ? `${STORAGE_KEY}:${encodeURIComponent(userId)}` : STORAGE_KEY;
+}
+
 function getStorage(storage) {
   if (storage) return storage;
   if (!globalThis.localStorage) throw new Error('Conversation history is unavailable in this browser.');
   return globalThis.localStorage;
 }
 
-function read(storage) {
-  const saved = getStorage(storage).getItem(STORAGE_KEY);
+function read(storage, userId) {
+  const saved = getStorage(storage).getItem(storageKey(userId));
   if (saved === null) return [];
   const conversations = JSON.parse(saved);
   if (!Array.isArray(conversations) || conversations.some((conversation) =>
@@ -24,46 +28,46 @@ function read(storage) {
   return conversations;
 }
 
-function write(conversations, storage) {
-  getStorage(storage).setItem(STORAGE_KEY, JSON.stringify(conversations));
+function write(conversations, storage, userId) {
+  getStorage(storage).setItem(storageKey(userId), JSON.stringify(conversations));
 }
 
-export function listConversations(storage) {
-  return read(storage).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+export function listConversations(storage, userId) {
+  return read(storage, userId).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }
 
-export function startConversation(storage, now = new Date(), id = globalThis.crypto.randomUUID()) {
-  const conversations = read(storage);
+export function startConversation(storage, now = new Date(), id = globalThis.crypto.randomUUID(), userId) {
+  const conversations = read(storage, userId);
   conversations.push({ id, startedAt: now.toISOString(), endedAt: null, messages: [] });
-  write(conversations.slice(-MAX_CONVERSATIONS), storage);
+  write(conversations.slice(-MAX_CONVERSATIONS), storage, userId);
   return id;
 }
 
-export function addConversationMessage(id, role, text, storage, now = new Date()) {
+export function addConversationMessage(id, role, text, storage, now = new Date(), userId) {
   if (!['user', 'assistant'].includes(role) || typeof text !== 'string') throw new TypeError('Invalid conversation message.');
   const content = text.trim();
   if (!content) return;
-  const conversations = read(storage);
+  const conversations = read(storage, userId);
   const conversation = conversations.find((entry) => entry.id === id);
   if (!conversation) throw new Error('The active conversation could not be found in saved history.');
   conversation.messages.push({ role, text: content, at: now.toISOString() });
-  write(conversations, storage);
+  write(conversations, storage, userId);
 }
 
-export function endConversation(id, storage, now = new Date()) {
-  const conversations = read(storage);
+export function endConversation(id, storage, now = new Date(), userId) {
+  const conversations = read(storage, userId);
   const conversation = conversations.find((entry) => entry.id === id);
   if (!conversation) return;
   conversation.endedAt = now.toISOString();
-  write(conversations, storage);
+  write(conversations, storage, userId);
 }
 
-export function clearConversations(storage) {
-  getStorage(storage).removeItem(STORAGE_KEY);
+export function clearConversations(storage, userId) {
+  getStorage(storage).removeItem(storageKey(userId));
 }
 
-export function buildHistoryContext(storage) {
-  const messages = listConversations(storage)
+export function buildHistoryContext(storage, userId) {
+  const messages = listConversations(storage, userId)
     .reverse()
     .flatMap((conversation) => conversation.messages)
     .slice(-MAX_CONTEXT_MESSAGES);
@@ -79,4 +83,19 @@ export function buildHistoryContext(storage) {
     context += entry;
   }
   return context.trim();
+}
+
+export function hasLegacyHistory(storage) {
+  return read(storage).length > 0;
+}
+
+export function migrateLegacyHistory(userId, storage) {
+  if (typeof userId !== 'string' || !userId) throw new TypeError('A user profile is required to restore conversation history.');
+  const localStorage = getStorage(storage);
+  const legacy = read(localStorage);
+  if (localStorage.getItem(storageKey(userId)) !== null) return { migrated: false, conversations: 0 };
+  if (localStorage.getItem(STORAGE_KEY) === null) return { migrated: false, conversations: 0 };
+  write(legacy, localStorage, userId);
+  localStorage.removeItem(STORAGE_KEY);
+  return { migrated: true, conversations: legacy.length };
 }
