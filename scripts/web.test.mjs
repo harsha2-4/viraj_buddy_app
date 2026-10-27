@@ -232,6 +232,15 @@ test('scene motion cues are gated by speaking and reduced-motion styles', async 
   assert.match(styles, /data-cue="count"/);
 });
 
+test('conversation layout gives topic artwork more room and scales Buddy down responsively', async () => {
+  const styles = await readFile(new URL('../web/css/styles.css', import.meta.url), 'utf8');
+  assert.match(styles, /body:has\(#voice-controls:not\(\[hidden\]\)\) \.avatar \{ width: min\(100%,230px\); \}/);
+  assert.match(styles, /body:has\(#voice-controls:not\(\[hidden\]\)\) \.scene-picture \{ width: 72%; max-width: 700px; \}/);
+  assert.match(styles, /body:has\(#voice-controls:not\(\[hidden\]\)\) \.avatar \{ width: 128px; \}/);
+  assert.match(styles, /body:has\(#voice-controls:not\(\[hidden\]\)\) \.scene-picture \{ width: min\(100%,480px\);/);
+  assert.match(styles, /body:has\(#voice-controls:not\(\[hidden\]\)\) \.scene \{ flex-direction: column-reverse;/);
+});
+
 test('recording errors explain microphone denial, missing devices, unsupported browsers, and retry', async () => {
   const { recordingFailureMessage } = await import('../web/js/onboarding.js');
   assert.match(recordingFailureMessage({ name: 'NotAllowedError' }), /denied.*retry/i);

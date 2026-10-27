@@ -229,12 +229,12 @@ button:focus-visible,a:focus-visible {
 #mute-button[aria-pressed="true"] { background: #ead396; }
 .voice-note { font-size: 11px; line-height: 1.6; color: var(--muted); text-align: center; }
 .transcript { background: white; border: 1px solid #dce5d8; border-radius: 18px; padding: 18px; font-size: 16px; line-height: 1.6; max-height: 180px; overflow: auto; text-align: left; }
-.scene { --scene-sky: #e7efe4; --scene-ground: #b4d2a5; display: flex; align-items: center; gap: 20px; width: min(100% - 44px,1000px); margin: 0 auto 24px; padding: 22px 28px 0; border: 1px solid #dce3d4; border-radius: 28px; background: var(--scene-sky); overflow: hidden; }
+.scene { --scene-sky: #e7efe4; --scene-ground: #b4d2a5; display: flex; align-items: center; gap: 20px; width: min(100% - 44px,1120px); margin: 0 auto 24px; padding: 22px 28px 0; border: 1px solid #dce3d4; border-radius: 28px; background: var(--scene-sky); overflow: hidden; }
 .scene-copy { flex: 1; padding-bottom: 22px; }
 .scene .eyebrow { margin-bottom: 7px; }
 .scene h2 { margin: 0; font-size: 22px; letter-spacing: -.5px; }
 .scene p:last-child { font-size: 13px; line-height: 1.5; margin-bottom: 0; }
-.scene-picture { width: 48%; max-width: 420px; align-self: end; overflow: visible; }
+.scene-picture { width: 62%; max-width: 620px; align-self: end; overflow: visible; }
 .scene-object { transform-box: fill-box; transform-origin: center; }
 .scene[data-talking="true"][data-cue="float"] .scene-object { animation: float-picture 3.5s ease-in-out infinite; }
 .scene[data-talking="true"][data-cue="stomp"] .scene-object[data-slot="2"] { animation: stomp-picture 1.8s ease-in-out infinite; }
@@ -243,6 +243,14 @@ button:focus-visible,a:focus-visible {
 .scene[data-talking="true"][data-cue="count"] .scene-object[data-slot="2"] { animation-delay: .35s; }
 .scene[data-talking="true"][data-cue="count"] .scene-object[data-slot="3"] { animation-delay: .7s; }
 .scene[data-scene="space"], .scene[data-scene="space"] .eyebrow { color: #fff3d3; }
+@media(min-width:701px) {
+  body:has(#voice-controls:not([hidden])) .launchpad { grid-template-columns: minmax(210px,.68fr) minmax(0,1.32fr); gap: clamp(24px,4vw,60px); margin-top: 8px; margin-bottom: 20px; }
+  body:has(#voice-controls:not([hidden])) .avatar-area { min-height: 310px; }
+  body:has(#voice-controls:not([hidden])) .avatar { width: min(100%,230px); }
+  body:has(#voice-controls:not([hidden])) .avatar-halo { width: min(100%,240px); }
+  body:has(#voice-controls:not([hidden])) .avatar-shadow { bottom: 40px; }
+  body:has(#voice-controls:not([hidden])) .scene-picture { width: 72%; max-width: 700px; }
+}
 @keyframes blink { 0%,43%,47%,100% { transform: scaleY(1); } 45% { transform: scaleY(.1); } }
 @keyframes nod { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg) translateY(2px); } }
 @keyframes explain { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(12deg); } }
@@ -258,6 +266,16 @@ button:focus-visible,a:focus-visible {
   .scene-picture { width: 45%; min-width: 100px; }
   .scene p:last-child { font-size: 11px; }
   .voice-controls { flex-wrap: wrap; }
+  body:has(#voice-controls:not([hidden])) .avatar-area { min-height: 150px; }
+  body:has(#voice-controls:not([hidden])) .avatar { width: 128px; }
+  body:has(#voice-controls:not([hidden])) .avatar-halo { width: 136px; }
+  body:has(#voice-controls:not([hidden])) .avatar-shadow { bottom: 19px; width: 94px; }
+  body:has(#voice-controls:not([hidden])) .launchpad { gap: 13px; margin-top: 6px; margin-bottom: 8px; }
+  body:has(#voice-controls:not([hidden])) .scene { flex-direction: column-reverse; align-items: stretch; width: min(100% - 24px,520px); margin-bottom: 12px; padding: 10px 14px 0; }
+  body:has(#voice-controls:not([hidden])) .scene-picture { width: min(100%,480px); min-width: 0; max-width: 480px; align-self: center; }
+  body:has(#voice-controls:not([hidden])) .scene-copy { padding: 0 2px 12px; }
+  body:has(#voice-controls:not([hidden])) .scene h2 { font-size: 18px; }
+  body:has(#voice-controls:not([hidden])) .scene p:last-child { font-size: 12px; }
 }
 
 .eyebrow {
@@ -918,9 +936,6 @@ code {
 }
 
 @media(max-width:700px) {
-  body:has(#voice-controls:not([hidden])) .avatar-area { min-height: 192px; }
-  body:has(#voice-controls:not([hidden])) .avatar { width: 165px; }
-  body:has(#voice-controls:not([hidden])) .avatar-halo { width: 170px; }
   body:has(#voice-controls:not([hidden])) .welcome > .eyebrow,
   body:has(#voice-controls:not([hidden])) .welcome > h1,
   body:has(#voice-controls:not([hidden])) .welcome > .subtitle { display: none; }
