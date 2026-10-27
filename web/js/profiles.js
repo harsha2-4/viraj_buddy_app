@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'viraj-buddy:user-profiles:v1';
+const ACTIVE_PROFILE_KEY = 'viraj-buddy:active-profile:v1';
 const MAX_NAME_LENGTH = 60;
 
 function getStorage(storage) {
@@ -33,6 +34,19 @@ function read(storage) {
 
 function write(profiles, storage) {
   getStorage(storage).setItem(STORAGE_KEY, JSON.stringify(profiles));
+}
+
+export function getActiveProfileId(storage) {
+  return getStorage(storage).getItem(ACTIVE_PROFILE_KEY);
+}
+
+export function setActiveProfileId(id, storage) {
+  if (typeof id !== 'string' || !id) throw new TypeError('An active user profile is required.');
+  getStorage(storage).setItem(ACTIVE_PROFILE_KEY, id);
+}
+
+export function clearActiveProfileId(storage) {
+  getStorage(storage).removeItem(ACTIVE_PROFILE_KEY);
 }
 
 export function validateProfileName(value) {

@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { getChatGptDestination } from '../web/js/navigation.js';
 import { addConversationMessage, buildHistoryContext, clearConversations, endConversation, listConversations, startConversation } from '../web/js/history.js';
 import { hasLegacyHistory, migrateLegacyHistory } from '../web/js/history.js';
-import { createProfile, findProfile, listProfiles, validateProfileName } from '../web/js/profiles.js';
+import { clearActiveProfileId, createProfile, findProfile, getActiveProfileId, listProfiles, setActiveProfileId, validateProfileName } from '../web/js/profiles.js';
 import { showExperienceScreen } from '../web/js/onboarding.js';
 
 test('destination accepts authenticated ChatGPT paths and retains query/hash', () => {
@@ -72,6 +72,21 @@ test('profile names are trimmed, required, and looked up case-insensitively with
   assert.equal(findProfile('sAM lEe', storage).id, profile.id);
   assert.throws(() => createProfile('SAM LEE', storage, new Date(), 'other-id'), error => error.code === 'PROFILE_EXISTS' && error.profile.id === 'sam-id');
   assert.deepEqual(listProfiles(storage), [profile]);
+});
+
+test('active profile selection persists until explicitly cleared', () => {
+  const values = new Map();
+  const storage = {
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { values.set(key, value); },
+    removeItem(key) { values.delete(key); }
+  };
+  assert.equal(getActiveProfileId(storage), null);
+  setActiveProfileId('sam-id', storage);
+  assert.equal(getActiveProfileId(storage), 'sam-id');
+  clearActiveProfileId(storage);
+  assert.equal(getActiveProfileId(storage), null);
+  assert.throws(() => setActiveProfileId('', storage), /active user profile/);
 });
 
 test('conversation history is isolated per profile', () => {

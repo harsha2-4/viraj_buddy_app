@@ -6,7 +6,7 @@ import { getChatGptDestination } from './navigation.js';
 import { VoiceSession } from './voice.js';
 import { SceneController } from './scenes.js';
 import { addConversationMessage, clearConversations, endConversation, hasLegacyHistory, listConversations, migrateLegacyHistory, startConversation } from './history.js';
-import { createProfile, findProfile, listProfiles, removeProfile, validateProfileName } from './profiles.js';
+import { clearActiveProfileId, createProfile, findProfile, getActiveProfileId, getProfile, listProfiles, removeProfile, setActiveProfileId, validateProfileName } from './profiles.js';
 import { recordingFailureMessage, showExperienceScreen } from './onboarding.js';
 import { clearVoiceProfile, getVoiceProfile, hasLegacyVoiceProfile, migrateLegacyVoiceProfile, recordVoiceProfile, saveVoiceProfile } from './voiceProfile.js';
 
@@ -214,13 +214,21 @@ function renderHistory() {
 function activateProfile(profile) {
   if (active) voice.stop();
   activeProfile = profile;
+  let persistenceError;
+  try {
+    setActiveProfileId(profile.id);
+  } catch (error) {
+    persistenceError = error;
+  }
   duplicateProfile = null;
   byId('switch-user-button').hidden = false;
   byId('scene').hidden = false;
   byId('greeting').firstChild.textContent = `Hi ${profile.name}! `;
   byId('buddy-state').textContent = 'Your AI adventure buddy';
   avatar.setState('idle');
-  byId('status').textContent = 'What should we talk about today?';
+  byId('status').textContent = persistenceError
+    ? `Hi ${profile.name}. This profile is open, but this browser could not remember your selection: ${persistenceError.message}`
+    : 'What should we talk about today?';
   showScreen('session');
   renderHistory();
   renderVoiceProfile();
@@ -229,6 +237,12 @@ function activateProfile(profile) {
 }
 
 function returnToWelcome() {
+  try {
+    clearActiveProfileId();
+  } catch (error) {
+    byId(activeProfile ? 'status' : 'welcome-status').textContent = `Could not log out because this browser could not clear the saved profile: ${error.message}`;
+    return;
+  }
   if (active) voice.stop();
   activeProfile = null;
   activeConversationId = undefined;
@@ -243,6 +257,22 @@ function returnToWelcome() {
   avatar.setState('welcome');
   showScreen('welcome');
   refreshUserSuggestions();
+}
+
+function restoreActiveProfile() {
+  try {
+    const profileId = getActiveProfileId();
+    if (!profileId) return;
+    const profile = getProfile(profileId);
+    if (!profile) {
+      clearActiveProfileId();
+      byId('welcome-status').textContent = 'The previously selected profile is no longer available. Choose a profile to continue.';
+      return;
+    }
+    activateProfile(profile);
+  } catch (error) {
+    byId('welcome-status').textContent = `The saved profile could not be restored: ${error.message}`;
+  }
 }
 
 async function findLegacyData() {
@@ -620,6 +650,8 @@ byId('restore-legacy-user').addEventListener('click', async () => {
     byId('existing-user-status').textContent = `${profile ? `A profile for ${profile.name} was created, but ` : ''}previous data could not be fully restored: ${error.message}. Reopen the profile or ask a grown-up for help.`;
   }
 });
+
+restoreActiveProfile();
 
 // Restore controls after returning via Back (including iOS's back/forward cache).
 window.addEventListener('pageshow', resetLauncher);

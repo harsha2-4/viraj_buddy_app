@@ -37,7 +37,8 @@ and played in order. Device/browser suspension can stop foreground microphone us
 `web/js/profiles.js` validates and stores named local profiles. Each profile ID
 namespaces conversation history and its rough voice settings; selecting a
 different profile cannot share the previous profile's history or voice hints.
-The first-run welcome flow requires an explicit user choice. Existing legacy
+The selected profile ID is kept locally and restored on reload until the user
+logs out or switches users. The first-run welcome flow requires an explicit user choice. Existing legacy
 single-user history and voice data stay unassigned until a user chooses the
 restore action and provides a name. Enrollment audio is analyzed locally and
 discarded; only coarse derived pitch and energy bands are stored and sent.

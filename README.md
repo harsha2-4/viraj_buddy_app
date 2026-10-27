@@ -10,7 +10,9 @@ audio is segmented locally and sent to Groq only after speech is detected.
 The welcome screen lets each person create a named local profile or reopen an
 existing profile on that device. Conversation history and derived voice settings
 are kept separately for each profile. The app does not set a default person's
-name. If an older installation has unassigned single-user data, choose
+name. Once a profile is selected, it stays active on this device after reload
+until **Log out / switch user** is chosen. If an older installation has
+unassigned single-user data, choose
 **Existing user**, enter a name, and explicitly select **Restore previous
 on-device data** to attach it. Nothing is assigned automatically.
 

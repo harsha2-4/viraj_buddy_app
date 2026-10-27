@@ -17,6 +17,15 @@ test('authoritative master prompt matches its recorded SHA-256 baseline byte for
   assert.equal(createHash('sha256').update(prompt).digest('hex'), expectedPromptHash);
 });
 
+test('master prompt blends child-led learning into play without turning chat into a quiz', async () => {
+  const prompt = await readFile(promptUrl, 'utf8');
+  assert.match(prompt, /Let learning grow from what the child says, asks, or imagines/);
+  assert.match(prompt, /do not announce a lesson or turn\s+ordinary chat into a school session/);
+  assert.match(prompt, /Do not\s+require an answer, test recall, or ask a question after every fact/);
+  assert.match(prompt, /Follow the child's interest/);
+  assert.match(prompt, /It is fine to simply enjoy a playful exchange without teaching a fact/);
+});
+
 test('Groq config uses the required model IDs and rejects legacy overrides', () => {
   const config = loadGroqConfig({ GROQ_API_KEY: 'secret' });
   assert.equal(config.sttModel, 'whisper-large-v3-turbo');
